@@ -115,11 +115,7 @@ export default function GameBoard() {
 
   // Handle character click (toggle elimination)
   const handleCharacterClick = (characterId: string) => {
-    // Don't allow eliminating your own secret character
-    if (gameState.secretCharacter && characterId === gameState.secretCharacter.id) {
-      return;
-    }
-    
+    // Allow eliminating any character, including your own secret character
     toggleCharacterElimination(characterId);
   };
 

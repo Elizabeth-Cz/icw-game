@@ -32,12 +32,7 @@ export class CharacterService {
   ];
 
   // Avatar styles for DiceBear API
-  private avatarStyles = [
-    'adventurer', 'adventurer-neutral', 'avataaars', 'big-ears', 
-    'big-ears-neutral', 'big-smile', 'bottts', 'croodles', 
-    'croodles-neutral', 'fun-emoji', 'lorelei', 'lorelei-neutral', 
-    'micah', 'miniavs', 'open-peeps', 'personas', 'pixel-art'
-  ];
+  private avatarStyles = ['toon-head'];
 
   // Initialize characters
   initializeCharacters(): void {
@@ -57,9 +52,9 @@ export class CharacterService {
       usedNames.add(fullName);
       
       // Generate avatar URL using DiceBear API
-      const style = this.getRandomItem(this.avatarStyles);
+      // const style = this.getRandomItem(this.avatarStyles);
       const seed = encodeURIComponent(fullName);
-      const avatarUrl = `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`;
+      const avatarUrl = `https://api.dicebear.com/9.x/toon-head/svg?seed=${seed}`;
       
       this.characters.push({
         id: `char-${i + 1}`,
