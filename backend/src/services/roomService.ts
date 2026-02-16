@@ -6,6 +6,7 @@ export interface Player {
   secretCharacterId?: string;
   reconnectToken: string;
   connected: boolean;
+  characterOrder?: string[]; // Array of character IDs in player-specific order
 }
 
 export interface Room {
@@ -215,5 +216,24 @@ export class RoomService {
         this.deleteRoom(roomCode);
       }
     }
+  }
+  
+  // Assign shuffled character orders to players
+  assignShuffledCharacterOrders(roomCode: string, characterIds: string[]): void {
+    const room = this.getRoom(roomCode);
+    if (!room) throw new Error('Room not found');
+    if (room.players.length !== 2) throw new Error('Room must have exactly 2 players');
+    
+    // Create a shuffled order for player 1
+    const player1Order = [...characterIds].sort(() => 0.5 - Math.random());
+    
+    // Create a different shuffled order for player 2
+    const player2Order = [...characterIds].sort(() => 0.5 - Math.random());
+    
+    // Assign the orders to the players
+    room.players[0].characterOrder = player1Order;
+    room.players[1].characterOrder = player2Order;
+    
+    room.lastActivity = new Date();
   }
 }

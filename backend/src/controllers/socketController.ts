@@ -29,6 +29,7 @@ export enum SocketEvents {
   GET_ALL_CHARACTERS = 'get_all_characters',
   ALL_CHARACTERS = 'all_characters',
   REQUEST_SECRET_CHARACTER = 'request_secret_character',
+  CHARACTER_ORDER = 'character_order',
 }
 
 export const setupSocketHandlers = (io: Server) => {
@@ -184,6 +185,15 @@ export const setupSocketHandlers = (io: Server) => {
           character: secretCharacter,
           roomStatus: room.status,
         });
+        
+        // If the player has a character order, request characters to get them in the right order
+        if (player.characterOrder && player.characterOrder.length > 0) {
+          // Trigger a get_all_characters request to get the ordered characters
+          socket.emit(SocketEvents.GET_ALL_CHARACTERS, {
+            roomCode: room.roomCode,
+            playerId: player.playerId
+          });
+        }
 
         // Notify other player that this player has reconnected
         socket.to(room.roomCode).emit('player_reconnected');
@@ -217,11 +227,21 @@ export const setupSocketHandlers = (io: Server) => {
           const secretCharacter = characters[index];
           roomService.assignSecretCharacter(roomCode, player.playerId, secretCharacter.id);
           
+          // Reset character order to force new shuffling
+          player.characterOrder = undefined;
+          
           // Send new secret character to each player
           io.to(player.socketId).emit(SocketEvents.SECRET_CHARACTER_ASSIGNED, {
             character: secretCharacter,
           });
         });
+        
+        // Get all characters for shuffling
+        const allCharacters = characterService.getAllCharacters();
+        const characterIds = allCharacters.map(char => char.id);
+        
+        // Create new shuffled orders for both players
+        roomService.assignShuffledCharacterOrders(roomCode, characterIds);
       } catch (error) {
         console.error('Error playing again:', error);
         socket.emit(SocketEvents.ROOM_ERROR, {
@@ -252,10 +272,52 @@ export const setupSocketHandlers = (io: Server) => {
     });
     
     // Get all characters
-    socket.on(SocketEvents.GET_ALL_CHARACTERS, () => {
+    socket.on(SocketEvents.GET_ALL_CHARACTERS, ({ roomCode, playerId }) => {
       try {
+        // Get all characters
         const characters = characterService.getAllCharacters();
-        socket.emit(SocketEvents.ALL_CHARACTERS, { characters });
+        
+        // Get the room and player
+        const room = roomService.getRoom(roomCode);
+        if (!room) {
+          // If no room is provided or room doesn't exist, just send characters in default order
+          return socket.emit(SocketEvents.ALL_CHARACTERS, { characters });
+        }
+        
+        // Find the player
+        const player = room.players.find(p => p.playerId === playerId);
+        if (!player) {
+          return socket.emit(SocketEvents.ALL_CHARACTERS, { characters });
+        }
+        
+        // If this is the first time getting characters, create and assign shuffled orders
+        if (!player.characterOrder) {
+          // Get all character IDs
+          const characterIds = characters.map(char => char.id);
+          
+          // Assign shuffled orders to both players if not already assigned
+          if (!room.players.some(p => p.characterOrder)) {
+            roomService.assignShuffledCharacterOrders(roomCode, characterIds);
+          }
+        }
+        
+        // If player has a custom order, reorder the characters
+        if (player.characterOrder) {
+          // Create a map of character ID to character object
+          const characterMap = characters.reduce((map, char) => {
+            map[char.id] = char;
+            return map;
+          }, {} as Record<string, Character>);
+          
+          // Reorder characters based on player's order
+          const orderedCharacters = player.characterOrder.map(id => characterMap[id]);
+          
+          // Send the ordered characters
+          socket.emit(SocketEvents.ALL_CHARACTERS, { characters: orderedCharacters });
+        } else {
+          // Send characters in default order if no custom order
+          socket.emit(SocketEvents.ALL_CHARACTERS, { characters });
+        }
       } catch (error) {
         console.error('Error getting all characters:', error);
         socket.emit(SocketEvents.ROOM_ERROR, {

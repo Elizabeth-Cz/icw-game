@@ -30,7 +30,7 @@ export default function GameBoard() {
     const dummyCharacters = Array.from({ length: 24 }, (_, i) => ({
       id: `dummy-${i}`,
       name: `Character ${i + 1}`,
-      avatarUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${i}`,
+      avatarUrl: `https://api.dicebear.com/9.x/toon-head/svg?seed=${i}`,
     }));
     setCharacters(dummyCharacters);
   }, []);
@@ -52,9 +52,12 @@ export default function GameBoard() {
       setSecretCharacter(character);
       
       // Fetch all characters if we don't have them yet
-      if (gameState.allCharacters.length === 0) {
-        console.log('Requesting all characters');
-        socket.emit("get_all_characters");
+      if (gameState.allCharacters.length === 0 && roomCode && gameState.playerId) {
+        console.log('Requesting all characters with room and player info');
+        socket.emit("get_all_characters", {
+          roomCode,
+          playerId: gameState.playerId
+        });
       }
     };
 
