@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSocket } from "../../context/SocketContext";
 import { useGame, Character } from "../../context/GameContext";
 import CharacterCard from "../../components/CharacterCard";
+import PlayAgainModal from "../../components/PlayAgainModal";
 
 export default function GameBoard() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function GameBoard() {
   
   const [error, setError] = useState<string | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
+  const [isPlayAgainModalOpen, setIsPlayAgainModalOpen] = useState<boolean>(false);
 
   // Generate dummy characters for initial render
   useEffect(() => {
@@ -122,8 +124,19 @@ export default function GameBoard() {
     toggleCharacterElimination(characterId);
   };
 
-  // Handle play again
+  // Handle play again button click - opens the modal
   const handlePlayAgain = () => {
+    if (!socket || !roomCode || !gameState.playerId) {
+      setError("Connection error. Please try again.");
+      return;
+    }
+    
+    // Open the modal instead of immediately restarting
+    setIsPlayAgainModalOpen(true);
+  };
+  
+  // Handle rematch option (same room, new characters)
+  const handleRematch = () => {
     if (!socket || !roomCode || !gameState.playerId) {
       setError("Connection error. Please try again.");
       return;
@@ -135,6 +148,29 @@ export default function GameBoard() {
     });
     
     resetEliminations();
+    setIsPlayAgainModalOpen(false);
+  };
+  
+  // Handle new game option
+  const handleNewGame = () => {
+    // Clear all game state from localStorage
+    localStorage.removeItem("reconnectToken");
+    localStorage.removeItem("roomCode");
+    localStorage.removeItem("playerId");
+    
+    // Redirect to home page
+    router.push("/");
+  };
+  
+  // Handle join game option
+  const handleJoinGame = () => {
+    // Clear all game state from localStorage
+    localStorage.removeItem("reconnectToken");
+    localStorage.removeItem("roomCode");
+    localStorage.removeItem("playerId");
+    
+    // Redirect to join game page
+    router.push("/join-game");
   };
 
   // Handle back to main menu
@@ -150,6 +186,15 @@ export default function GameBoard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100 p-2 sm:p-4">
+      {/* Play Again Modal */}
+      <PlayAgainModal
+        isOpen={isPlayAgainModalOpen}
+        onClose={() => setIsPlayAgainModalOpen(false)}
+        onRematch={handleRematch}
+        onNewGame={handleNewGame}
+        onJoinGame={handleJoinGame}
+      />
+      
       <div className="mx-auto max-w-6xl">
         {/* Top Bar */}
         <div className="mb-2 sm:mb-4 flex flex-wrap items-center justify-between gap-2">
