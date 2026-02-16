@@ -225,7 +225,7 @@ export default function GameBoard() {
           <h2 className="mb-2 sm:mb-4 text-center text-lg font-semibold text-blue-800">
             Characters
           </h2>
-          <div className="grid grid-cols-3 gap-1 xs:gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+          <div className="grid grid-cols-4 gap-1 xs:gap-2 sm:grid-cols-4 md:grid-cols-5">
             {characters.map((character) => (
               <CharacterCard
                 key={character.id}

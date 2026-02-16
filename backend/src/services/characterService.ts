@@ -7,59 +7,34 @@ export interface Character {
 
 export class CharacterService {
   private characters: Character[] = [];
-  private readonly TOTAL_CHARACTERS = 24;
-
-  // First names for random generation
-  private firstNames = [
-    'Emma', 'Liam', 'Olivia', 'Noah', 'Ava', 'William', 'Sophia', 'James',
-    'Isabella', 'Logan', 'Charlotte', 'Benjamin', 'Amelia', 'Mason', 'Mia',
-    'Elijah', 'Harper', 'Oliver', 'Evelyn', 'Jacob', 'Abigail', 'Lucas',
-    'Emily', 'Michael', 'Elizabeth', 'Alexander', 'Sofia', 'Ethan', 'Avery',
-    'Daniel', 'Ella', 'Matthew', 'Scarlett', 'Henry', 'Grace', 'Joseph',
-    'Chloe', 'Jackson', 'Victoria', 'Samuel', 'Riley', 'Sebastian', 'Aria',
-    'David', 'Lily', 'Carter', 'Aubrey', 'Wyatt', 'Zoey', 'Jayden', 'Penelope'
+  
+  // List of colleague names to use as characters
+  private colleagues = [
+    'Michiel', 'Sid', 'Tissam', 'Frank', 'Wala', 'Ivan', 
+    'Kevin', 'Kenny', 'Diogo', 'Liz', 'Maria', 'Louise', 
+    'David', 'Tarek', 'Jos', 'Nick', 'Tonny', 'Dries', 
+    'Hitesh', 'Giri'
   ];
+  
+  // Set total characters to match the number of colleagues
+  private readonly TOTAL_CHARACTERS = this.colleagues.length;
 
-  // Last names for random generation
-  private lastNames = [
-    'Smith', 'Johnson', 'Williams', 'Jones', 'Brown', 'Davis', 'Miller', 'Wilson',
-    'Moore', 'Taylor', 'Anderson', 'Thomas', 'Jackson', 'White', 'Harris', 'Martin',
-    'Thompson', 'Garcia', 'Martinez', 'Robinson', 'Clark', 'Rodriguez', 'Lewis', 'Lee',
-    'Walker', 'Hall', 'Allen', 'Young', 'Hernandez', 'King', 'Wright', 'Lopez',
-    'Hill', 'Scott', 'Green', 'Adams', 'Baker', 'Gonzalez', 'Nelson', 'Carter',
-    'Mitchell', 'Perez', 'Roberts', 'Turner', 'Phillips', 'Campbell', 'Parker', 'Evans',
-    'Edwards', 'Collins', 'Stewart', 'Sanchez', 'Morris', 'Rogers', 'Reed', 'Cook'
-  ];
-
-  // Avatar styles for DiceBear API
-  private avatarStyles = ['toon-head'];
+  // Avatar style for DiceBear API
+  private avatarStyle = 'toon-head';
 
   // Initialize characters
   initializeCharacters(): void {
     this.characters = [];
-    const usedNames = new Set<string>();
-
+    
+    // Create characters from colleague names
     for (let i = 0; i < this.TOTAL_CHARACTERS; i++) {
-      let fullName: string;
-      
-      // Ensure unique names
-      do {
-        const firstName = this.getRandomItem(this.firstNames);
-        const lastName = this.getRandomItem(this.lastNames);
-        fullName = `${firstName} ${lastName}`;
-      } while (usedNames.has(fullName));
-      
-      usedNames.add(fullName);
-      
-      // Generate avatar URL using DiceBear API
-      // const style = this.getRandomItem(this.avatarStyles);
-      const seed = encodeURIComponent(fullName);
-      const avatarUrl = `https://api.dicebear.com/9.x/toon-head/svg?seed=${seed}`;
+      const name = this.colleagues[i];
+      const seed = encodeURIComponent(name);
       
       this.characters.push({
         id: `char-${i + 1}`,
-        name: fullName,
-        avatarUrl,
+        name: name,
+        avatarUrl: `https://api.dicebear.com/9.x/${this.avatarStyle}/svg?seed=${seed}`,
       });
     }
   }

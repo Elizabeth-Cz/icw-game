@@ -76,20 +76,42 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [gameState, setGameState] = useState<GameState>(initialGameState);
   const { socket } = useSocket();
 
-  // Load reconnect token from localStorage on mount
+  // Load game state from localStorage on mount
   useEffect(() => {
     const storedToken = localStorage.getItem('reconnectToken');
-    if (storedToken) {
-      setGameState(prev => ({ ...prev, reconnectToken: storedToken }));
+    const storedRoomCode = localStorage.getItem('roomCode');
+    const storedPlayerId = localStorage.getItem('playerId');
+    
+    if (storedToken || storedRoomCode || storedPlayerId) {
+      setGameState(prev => ({
+        ...prev,
+        reconnectToken: storedToken || prev.reconnectToken,
+        roomCode: storedRoomCode || prev.roomCode,
+        playerId: storedPlayerId || prev.playerId
+      }));
     }
   }, []);
 
-  // Save reconnect token to localStorage when it changes
+  // Save game state to localStorage when it changes
   useEffect(() => {
     if (gameState.reconnectToken) {
       localStorage.setItem('reconnectToken', gameState.reconnectToken);
     }
   }, [gameState.reconnectToken]);
+  
+  // Save roomCode to localStorage when it changes
+  useEffect(() => {
+    if (gameState.roomCode) {
+      localStorage.setItem('roomCode', gameState.roomCode);
+    }
+  }, [gameState.roomCode]);
+  
+  // Save playerId to localStorage when it changes
+  useEffect(() => {
+    if (gameState.playerId) {
+      localStorage.setItem('playerId', gameState.playerId);
+    }
+  }, [gameState.playerId]);
 
   // Set room code
   const setRoomCode = (code: string) => {

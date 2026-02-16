@@ -69,6 +69,11 @@ export default function Home() {
       return;
     }
 
+    // Clear all game state from localStorage when creating a new game
+    localStorage.removeItem("reconnectToken");
+    localStorage.removeItem("roomCode");
+    localStorage.removeItem("playerId");
+    
     setIsLoading(true);
     setError(null);
     socket.emit("create_room");
@@ -76,6 +81,10 @@ export default function Home() {
 
   // Handle join game button click
   const handleJoinGame = () => {
+    // Clear all game state from localStorage when joining a new game
+    localStorage.removeItem("reconnectToken");
+    localStorage.removeItem("roomCode");
+    localStorage.removeItem("playerId");
     router.push("/join-game");
   };
 
