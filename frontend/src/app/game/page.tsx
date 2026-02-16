@@ -149,17 +149,17 @@ export default function GameBoard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100 p-4">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100 p-2 sm:p-4">
       <div className="mx-auto max-w-6xl">
         {/* Top Bar */}
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-2 sm:mb-4 flex flex-wrap items-center justify-between gap-2">
           <button
             onClick={handleBackToMainMenu}
-            className="flex items-center rounded-lg bg-white px-3 py-2 text-sm text-blue-600 shadow hover:bg-blue-50"
+            className="flex items-center rounded-lg bg-white px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm text-blue-600 shadow hover:bg-blue-50"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="mr-1 h-4 w-4"
+              className="mr-1 h-3 w-3 sm:h-4 sm:w-4"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -169,30 +169,30 @@ export default function GameBoard() {
                 clipRule="evenodd"
               />
             </svg>
-            Back to Main Menu
+            <span className="sm:inline">Back</span>
           </button>
 
           <div className="text-center">
-            <span className="text-sm font-medium text-gray-600">Room Code:</span>
-            <span className="ml-1 text-sm font-bold text-blue-800">{roomCode}</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-600">Room:</span>
+            <span className="ml-1 text-xs sm:text-sm font-bold text-blue-800">{roomCode}</span>
           </div>
 
           <button
             onClick={handlePlayAgain}
-            className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="rounded-lg bg-blue-600 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium text-white hover:bg-blue-700"
           >
             Play Again
           </button>
         </div>
 
         {/* Secret Character Section */}
-        <div className="mb-6 rounded-lg bg-white p-4 shadow-md">
-          <h2 className="mb-3 text-center text-lg font-semibold text-blue-800">
+        <div className="mb-3 sm:mb-6 rounded-lg bg-white p-2 sm:p-4 shadow-md">
+          <h2 className="mb-2 sm:mb-3 text-center text-base sm:text-lg font-semibold text-blue-800">
             You are:
           </h2>
           {gameState.secretCharacter ? (
             <div className="flex justify-center">
-              <div className="w-32">
+              <div className="w-24 sm:w-32">
                 <CharacterCard
                   character={gameState.secretCharacter}
                   isEliminated={false}
@@ -201,31 +201,31 @@ export default function GameBoard() {
               </div>
             </div>
           ) : (
-            <div className="flex h-32 items-center justify-center">
-              <p className="text-gray-500">Loading your character...</p>
+            <div className="flex h-24 sm:h-32 items-center justify-center">
+              <p className="text-sm sm:text-base text-gray-500">Loading your character...</p>
             </div>
           )}
         </div>
 
         {/* Status Messages */}
         {gameState.gameStatus === "disconnected" && (
-          <div className="mb-4 rounded-lg bg-yellow-50 p-3 text-center text-sm text-yellow-700">
+          <div className="mb-2 sm:mb-4 rounded-lg bg-yellow-50 p-2 sm:p-3 text-center text-xs sm:text-sm text-yellow-700">
             Opponent disconnected. Waiting for them to reconnect...
           </div>
         )}
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 text-center text-sm text-red-600">
+          <div className="mb-2 sm:mb-4 rounded-lg bg-red-50 p-2 sm:p-3 text-center text-xs sm:text-sm text-red-600">
             {error}
           </div>
         )}
 
         {/* Character Grid */}
-        <div className="rounded-lg bg-white p-4 shadow-md">
-          <h2 className="mb-4 text-center text-lg font-semibold text-blue-800">
+        <div className="rounded-lg bg-white p-2 sm:p-4 shadow-md">
+          <h2 className="mb-2 sm:mb-4 text-center text-lg font-semibold text-blue-800">
             Characters
           </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6">
+          <div className="grid grid-cols-3 gap-1 xs:gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
             {characters.map((character) => (
               <CharacterCard
                 key={character.id}
