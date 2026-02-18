@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { useRouter } from "next/navigation";
 import { useSocket } from "../context/SocketContext";
 import { useGame } from "../context/GameContext";
@@ -15,12 +15,48 @@ export default function Home() {
 
   // Check for reconnect token on mount
   useEffect(() => {
+    // Clear error on mount to prevent showing old errors
+    setError(null);
+    
+    // Always clear any invalid reconnect tokens on page load
+    const clearInvalidTokenTimeout = setTimeout(() => {
+      if (error && error.includes("Invalid reconnect token")) {
+        // If we got an invalid token error, clear all stored tokens
+        localStorage.removeItem("reconnectToken");
+        localStorage.removeItem("roomCode");
+        localStorage.removeItem("playerId");
+        setError(null);
+      }
+    }, 1000);
+    
+    // Only attempt reconnection if we're not coming from a "New Game" or "Join Game" action
+    const freshStart = sessionStorage.getItem("freshStart");
+    if (freshStart === "true") {
+      // Clear the flag
+      sessionStorage.removeItem("freshStart");
+      return () => clearTimeout(clearInvalidTokenTimeout);
+    }
+    
+    // Check if we have a valid token before attempting reconnection
     const reconnectToken = localStorage.getItem("reconnectToken");
-    if (reconnectToken && socket && connected) {
+    const roomCode = localStorage.getItem("roomCode");
+    const playerId = localStorage.getItem("playerId");
+    
+    // Only attempt reconnection if we have ALL required pieces of information
+    if (reconnectToken && roomCode && playerId && socket && connected) {
+      console.log('Attempting reconnection with stored token');
       setIsLoading(true);
       socket.emit("request_reconnect", { reconnectToken });
+    } else if (reconnectToken && (!roomCode || !playerId)) {
+      // If we have a token but missing other required data, clear everything
+      console.log('Found incomplete game data, clearing storage');
+      localStorage.removeItem("reconnectToken");
+      localStorage.removeItem("roomCode");
+      localStorage.removeItem("playerId");
     }
-  }, [socket, connected]);
+    
+    return () => clearTimeout(clearInvalidTokenTimeout);
+  }, [socket, connected, error]);
 
   // Listen for socket events
   useEffect(() => {
@@ -47,6 +83,14 @@ export default function Home() {
     const handleError = ({ message }: { message: string }) => {
       setError(message);
       setIsLoading(false);
+      
+      // If we get an invalid reconnect token error, clear the token from localStorage
+      if (message && message.includes('Invalid reconnect token')) {
+        console.log('Clearing invalid reconnect token');
+        localStorage.removeItem('reconnectToken');
+        localStorage.removeItem('roomCode');
+        localStorage.removeItem('playerId');
+      }
     };
 
     // Register event listeners
@@ -74,6 +118,10 @@ export default function Home() {
     localStorage.removeItem("roomCode");
     localStorage.removeItem("playerId");
     
+    // Set a flag to indicate this is a fresh start
+    // This prevents reconnection attempts on page refresh
+    sessionStorage.setItem("freshStart", "true");
+    
     setIsLoading(true);
     setError(null);
     socket.emit("create_room");
@@ -85,46 +133,95 @@ export default function Home() {
     localStorage.removeItem("reconnectToken");
     localStorage.removeItem("roomCode");
     localStorage.removeItem("playerId");
+    
+    // Set a flag to indicate this is a fresh start
+    // This prevents reconnection attempts on page refresh
+    sessionStorage.setItem("freshStart", "true");
+    
     router.push("/join-game");
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-blue-100 p-4">
-      <main className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
-        <div className="mb-8 text-center">
-          <h1 className="mb-2 text-4xl font-bold text-blue-800">Guess Who</h1>
-          <h2 className="text-xl font-medium text-blue-600">ICW Edition</h2>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
+      <main className="w-full max-w-md relative">
+        {/* Colorful border with character avatars */}
+        <div className="absolute inset-0 -m-4 p-4 grid grid-cols-6 gap-0 overflow-hidden">
+          {/* Top row */}
+          <div className="bg-emerald-600"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
+          <div className="bg-yellow-500"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
+          <div className="bg-red-500"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
+          <div className="bg-pink-400"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
+          <div className="bg-blue-600"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
+          <div className="bg-teal-500"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
+          
+          {/* Left and right columns */}
+          {Array.from({ length: 10 }).map((_, i) => (
+            <React.Fragment key={`row-${i}`}>
+              <div className={`bg-${['emerald-600', 'yellow-500', 'red-500', 'pink-400', 'blue-600'][i % 5]}`}>
+                <div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div>
+              </div>
+              <div className="col-span-4"></div>
+              <div className={`bg-${['teal-500', 'yellow-500', 'red-500', 'pink-400', 'emerald-600'][i % 5]}`}>
+                <div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div>
+              </div>
+            </React.Fragment>
+          ))}
+          
+          {/* Bottom row */}
+          <div className="bg-teal-500"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
+          <div className="bg-yellow-500"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
+          <div className="bg-red-500"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
+          <div className="bg-pink-400"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
+          <div className="bg-blue-600"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
+          <div className="bg-emerald-600"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
         </div>
+        
+        {/* Main content */}
+        <div className="relative z-10 rounded-xl bg-black p-8 border-4 border-cream-100">
+          <div className="mb-8 text-center">
+            <div className="mb-4 bg-black rounded-lg p-4 border-2 border-cream-100">
+              <h1 className="text-5xl font-bold text-red-500 drop-shadow-[0_2px_2px_rgba(255,255,255,0.3)]" style={{ fontFamily: 'fantasy, cursive' }}>Guess Who</h1>
+            </div>
+            <div className="bg-gray-800 rounded-lg py-2 px-4 inline-block">
+              <h2 className="text-xl font-bold text-yellow-400">• ICW Edition •</h2>
+            </div>
+          </div>
 
-        <div className="flex flex-col gap-4">
-          <button
-            onClick={handleCreateGame}
-            disabled={isLoading || !connected}
-            className="rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 disabled:bg-gray-400"
-          >
-            {isLoading ? "Creating Game..." : "Create New Game"}
-          </button>
+          <div className="flex flex-col gap-6 mt-12">
+            <button
+              onClick={handleCreateGame}
+              disabled={isLoading || !connected}
+              className="rounded-lg border-2 border-teal-400 bg-black px-4 py-3 font-bold text-teal-400 transition hover:bg-teal-900 disabled:opacity-50"
+            >
+              {isLoading ? "Creating Game..." : "New Game"}
+            </button>
 
-          <button
-            onClick={handleJoinGame}
-            disabled={isLoading || !connected}
-            className="rounded-lg bg-blue-100 px-4 py-3 font-medium text-blue-800 transition hover:bg-blue-200 disabled:bg-gray-200 disabled:text-gray-500"
-          >
-            Join Game
-          </button>
+            <button
+              onClick={handleJoinGame}
+              disabled={isLoading || !connected}
+              className="rounded-lg border-2 border-red-500 bg-black px-4 py-3 font-bold text-red-500 transition hover:bg-red-900 disabled:opacity-50"
+            >
+              Join Game
+            </button>
+          </div>
+          
+          {/* ServiceNow logo */}
+          <div className="mt-12 text-center">
+            <p className="text-white text-lg font-bold">servicenow.</p>
+          </div>
+
+          {error && (
+            <div className="mt-4 rounded-md bg-red-900 border border-red-500 p-3 text-center text-sm text-red-300">
+              {error}
+            </div>
+          )}
+
+          {!connected && (
+            <div className="mt-4 rounded-md bg-yellow-900 border border-yellow-500 p-3 text-center text-sm text-yellow-300">
+              Connecting to server...
+            </div>
+          )}
         </div>
-
-        {error && (
-          <div className="mt-4 rounded-md bg-red-50 p-3 text-center text-sm text-red-600">
-            {error}
-          </div>
-        )}
-
-        {!connected && (
-          <div className="mt-4 rounded-md bg-yellow-50 p-3 text-center text-sm text-yellow-700">
-            Connecting to server...
-          </div>
-        )}
       </main>
     </div>
   );

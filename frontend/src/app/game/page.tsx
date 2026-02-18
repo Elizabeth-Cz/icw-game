@@ -185,7 +185,7 @@ export default function GameBoard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-blue-100 p-2 sm:p-4">
+    <div className="min-h-screen bg-gray-900 p-2 sm:p-4">
       {/* Play Again Modal */}
       <PlayAgainModal
         isOpen={isPlayAgainModalOpen}
@@ -197,14 +197,14 @@ export default function GameBoard() {
       
       <div className="mx-auto max-w-6xl">
         {/* Top Bar */}
-        <div className="mb-2 sm:mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-2">
           <button
             onClick={handleBackToMainMenu}
-            className="flex items-center rounded-lg bg-white px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm text-blue-600 shadow hover:bg-blue-50"
+            className="flex items-center text-cream-100 px-2 py-1 text-sm sm:text-base"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="mr-1 h-3 w-3 sm:h-4 sm:w-4"
+              className="mr-1 h-4 w-4 sm:h-5 sm:w-5"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
@@ -214,30 +214,30 @@ export default function GameBoard() {
                 clipRule="evenodd"
               />
             </svg>
-            <span className="sm:inline">Back</span>
+            <span className="text-cream-100">Back</span>
           </button>
 
-          <div className="text-center">
-            <span className="text-xs sm:text-sm font-medium text-gray-600">Room:</span>
-            <span className="ml-1 text-xs sm:text-sm font-bold text-blue-800">{roomCode}</span>
+          <div className="bg-gray-800 rounded-lg py-1 px-3 inline-block">
+            <span className="text-sm sm:text-base font-bold text-yellow-400">Room: </span>
+            <span className="text-sm sm:text-base font-bold text-yellow-400">{roomCode}</span>
           </div>
 
           <button
             onClick={handlePlayAgain}
-            className="rounded-lg bg-blue-600 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium text-white hover:bg-blue-700"
+            className="rounded-lg border-2 border-red-500 bg-black px-3 py-1 sm:px-4 sm:py-2 text-sm sm:text-base font-bold text-red-500 hover:bg-red-900 transition"
           >
             Play Again
           </button>
         </div>
 
         {/* Secret Character Section */}
-        <div className="mb-3 sm:mb-6 rounded-lg bg-white p-2 sm:p-4 shadow-md">
-          <h2 className="mb-2 sm:mb-3 text-center text-base sm:text-lg font-semibold text-blue-800">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="mb-4 text-center text-base sm:text-lg font-bold text-cream-100">
             You are:
           </h2>
           {gameState.secretCharacter ? (
             <div className="flex justify-center">
-              <div className="w-24 sm:w-32">
+              <div className="w-32 sm:w-40 border-4 border-blue-600 rounded-lg overflow-hidden">
                 <CharacterCard
                   character={gameState.secretCharacter}
                   isEliminated={false}
@@ -246,38 +246,42 @@ export default function GameBoard() {
               </div>
             </div>
           ) : (
-            <div className="flex h-24 sm:h-32 items-center justify-center">
-              <p className="text-sm sm:text-base text-gray-500">Loading your character...</p>
+            <div className="flex h-32 sm:h-40 items-center justify-center bg-gray-800 rounded-lg border border-gray-700">
+              <p className="text-sm sm:text-base text-gray-400">Loading your character...</p>
             </div>
           )}
         </div>
 
         {/* Status Messages */}
         {gameState.gameStatus === "disconnected" && (
-          <div className="mb-2 sm:mb-4 rounded-lg bg-yellow-50 p-2 sm:p-3 text-center text-xs sm:text-sm text-yellow-700">
+          <div className="mb-4 sm:mb-6 rounded-lg bg-yellow-900 border border-yellow-500 p-2 sm:p-3 text-center text-xs sm:text-sm text-yellow-300">
             Opponent disconnected. Waiting for them to reconnect...
           </div>
         )}
 
         {error && (
-          <div className="mb-2 sm:mb-4 rounded-lg bg-red-50 p-2 sm:p-3 text-center text-xs sm:text-sm text-red-600">
+          <div className="mb-4 sm:mb-6 rounded-lg bg-red-900 border border-red-500 p-2 sm:p-3 text-center text-xs sm:text-sm text-red-300">
             {error}
           </div>
         )}
 
         {/* Character Grid */}
-        <div className="rounded-lg bg-white p-2 sm:p-4 shadow-md">
-          <h2 className="mb-2 sm:mb-4 text-center text-lg font-semibold text-blue-800">
+        <div className="rounded-lg bg-gray-900 p-4 sm:p-6 border border-gray-800">
+          <h2 className="mb-4 sm:mb-6 text-center text-lg font-bold text-yellow-400">
             Characters
           </h2>
-          <div className="grid grid-cols-4 gap-1 xs:gap-2 sm:grid-cols-4 md:grid-cols-5">
+          <div className="grid grid-cols-4 gap-2 xs:gap-3 sm:grid-cols-4 md:grid-cols-5">
             {characters.map((character) => (
-              <CharacterCard
-                key={character.id}
-                character={character}
-                isEliminated={gameState.eliminatedCharacterIds.includes(character.id)}
-                onClick={() => handleCharacterClick(character.id)}
-              />
+              <div 
+                key={character.id} 
+                className={`relative rounded-lg overflow-hidden border-2 ${gameState.eliminatedCharacterIds.includes(character.id) ? 'border-gray-700 opacity-60' : 'border-blue-500'}`}
+              >
+                <CharacterCard
+                  character={character}
+                  isEliminated={gameState.eliminatedCharacterIds.includes(character.id)}
+                  onClick={() => handleCharacterClick(character.id)}
+                />
+              </div>
             ))}
           </div>
         </div>
