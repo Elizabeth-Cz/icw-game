@@ -215,7 +215,7 @@ export default function GameBoard() {
 
           <button
             onClick={handlePlayAgain}
-            className="rounded-lg border-2 border-red-500 bg-black px-3 py-1 sm:px-4 sm:py-2 text-sm sm:text-base font-bold text-red-500 hover:bg-red-900 transition"
+            className="rounded-lg border-2 border-red-500 bg-[#1C1817] px-3 py-1 sm:px-4 sm:py-2 text-sm sm:text-base font-bold text-red-500 hover:bg-red-900 transition"
           >
             Play Again
           </button>

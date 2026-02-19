@@ -75,15 +75,43 @@ const characterImages = [
   { src: WalaImage, alt: "Wala" },
 ];
 
-// Define background colors for the border
-const bgColors = [
-  "bg-emerald-600",
-  "bg-yellow-500",
-  "bg-red-500",
-  "bg-pink-400",
-  "bg-blue-600",
-  "bg-teal-500",
+// Define background colors for the border, grouped by color family
+const colorFamilies = [
+  // Greens
+  ["#237658", "#1A8A70", "#2C9678"],
+  // Yellows/Golds
+  ["#D0B334", "#E6C13D", "#C9A428"],
+  // Reds/Oranges
+  ["#D34F34", "#E05B41", "#C64025"],
+  // Pinks/Purples
+  ["#D084A9", "#C46B97", "#B85F8A"],
+  // Blues
+  ["#27528F", "#3468B0", "#1E4578"],
+  // Teals/Cyans
+  ["#0390A1", "#0AACBF", "#007D8C"]
 ];
+
+// Flatten array for backward compatibility
+const bgColors = colorFamilies.flat();
+
+// Function to get a color from a different family than the previous one
+const getDistinctColor = (prevColorIndex: number): string => {
+  // Determine which family the previous color belongs to
+  const prevFamilyIndex = Math.floor(prevColorIndex / 3);
+  
+  // Select a different family
+  let newFamilyIndex;
+  do {
+    newFamilyIndex = Math.floor(Math.random() * colorFamilies.length);
+  } while (newFamilyIndex === prevFamilyIndex);
+  
+  // Select a random color from the new family
+  const selectedFamily = colorFamilies[newFamilyIndex];
+  const colorInFamily = Math.floor(Math.random() * selectedFamily.length);
+  
+  // Return the absolute index in the flattened array
+  return bgColors[newFamilyIndex * 3 + colorInFamily];
+};
 
 // Main menu component
 export default function Home() {
@@ -92,6 +120,62 @@ export default function Home() {
   const { gameState, setRoomCode, setPlayerId, setReconnectToken } = useGame();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rotationOffset, setRotationOffset] = useState(0); // Track the current rotation position
+  const [isAnimationEnabled, setIsAnimationEnabled] = useState(false); // Toggle for animation
+  // Initialize with random colors from different families
+  const [frameColors, setFrameColors] = useState<string[]>(() => {
+    const initialColors: string[] = [];
+    let lastFamilyIndex = -1;
+    
+    for (let i = 0; i < 24; i++) {
+      // Select a different family than the last one
+      let familyIndex;
+      do {
+        familyIndex = Math.floor(Math.random() * colorFamilies.length);
+      } while (familyIndex === lastFamilyIndex);
+      
+      // Select a random color from the family
+      const family = colorFamilies[familyIndex];
+      const colorIndex = Math.floor(Math.random() * family.length);
+      initialColors.push(family[colorIndex]);
+      
+      lastFamilyIndex = familyIndex;
+    }
+    
+    return initialColors;
+  });
+
+  // Expose animation toggle to window object for programmatic control
+  useEffect(() => {
+    // Add the toggle functions to window for programmatic access
+    // @ts-ignore - Adding custom property to window
+    window.toggleAnimation = (enabled: boolean | undefined) => {
+      if (typeof enabled === 'undefined') {
+        // Toggle current state if no value provided
+        setIsAnimationEnabled(prev => !prev);
+        // @ts-ignore
+        console.log(`Animation ${!isAnimationEnabled ? 'enabled' : 'disabled'}`);
+      } else {
+        // Set to specific state
+        setIsAnimationEnabled(enabled);
+        console.log(`Animation ${enabled ? 'enabled' : 'disabled'}`);
+      }
+    };
+    
+    // @ts-ignore - Adding custom property to window
+    window.getAnimationState = () => {
+      console.log(`Animation is currently ${isAnimationEnabled ? 'enabled' : 'disabled'}`);
+      return isAnimationEnabled;
+    };
+    
+    return () => {
+      // Clean up when component unmounts
+      // @ts-ignore
+      delete window.toggleAnimation;
+      // @ts-ignore
+      delete window.getAnimationState;
+    };
+  }, [isAnimationEnabled]);
 
   // Check for reconnect token on mount
   useEffect(() => {
@@ -143,6 +227,35 @@ export default function Home() {
 
     return () => clearTimeout(clearInvalidTokenTimeout);
   }, [socket, connected, error]);
+
+  // Animation effect for rotating frame elements with random colors
+  useEffect(() => {
+    // Only set up the interval if animation is enabled
+    if (!isAnimationEnabled) return;
+    
+    const animationInterval = setInterval(() => {
+      // Update rotation for character images
+      setRotationOffset(prev => (prev + 1) % characterImages.length); // Increment and wrap around
+      
+      // Generate new colors for frame cells, ensuring adjacent cells have different color families
+      setFrameColors(prev => {
+        const newColors: string[] = [];
+        
+        // For each position, get the index of the previous color in bgColors array
+        for (let i = 0; i < prev.length; i++) {
+          const prevColorIndex = bgColors.indexOf(prev[i]);
+          
+          // Get a color from a different family
+          const newColor = getDistinctColor(prevColorIndex);
+          newColors.push(newColor);
+        }
+        
+        return newColors;
+      });
+    }, 300);
+    
+    return () => clearInterval(animationInterval);
+  }, [isAnimationEnabled]); // Re-run effect when animation toggle changes
 
   // Listen for socket events
   useEffect(() => {
@@ -233,9 +346,9 @@ export default function Home() {
     <div className="w-full h-screen grid grid-cols-6 grid-rows-10 relative">
       {/* Main content area - positioned absolutely to cover the inner cells but not overlap with borders */}
       <div className="absolute top-[10%] left-[16.67%] w-[66.66%] h-[80%] flex items-center justify-center">
-        <div className="rounded-xl bg-black border-cream-100 w-full h-full flex flex-col justify-between">
+        <div className="rounded-xl bg-[#1C1817] border-cream-100 w-full h-full flex flex-col justify-between">
           <div className="text-center">
-            <div className="mb-6 bg-black rounded-4xl border-cream-100 w-[130%] -ml-[15%] relative z-10 border-12 border-black">
+            <div className="mb-6 bg-[#1C1817] rounded-4xl border-cream-100 w-[130%] -ml-[15%] relative z-10 border-12 border-[#1C1817]">
               <div className="border-5 border-[#E8DBBC] rounded-3xl">
                 <div className="relative inline-block">
                   <h1 className="font-bold text-[#E25B45] mr-6" style={{
@@ -260,7 +373,6 @@ export default function Home() {
                       right: '-3rem',
                       top: '50%',
                       transform: 'translateY(-50%) rotate(5deg)',
-                      filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))',
                       overflow: 'hidden',
                       zIndex: -2
                     }}
@@ -278,7 +390,7 @@ export default function Home() {
             <button
               onClick={handleCreateGame}
               disabled={isLoading || !connected}
-              className="rounded-xl w-48 border-2 border-[#0390A1] bg-black h-20 font-bold text-xl transition hover:cursor-pointer"
+              className="rounded-xl w-48 border-2 border-[#0390A1] bg-[#1C1817] h-20 font-bold text-xl transition hover:cursor-pointer"
               style={{ boxShadow: '5px 7px #0390A1' }}
             >
               {isLoading ? "Creating..." : "New Game"}
@@ -287,7 +399,7 @@ export default function Home() {
             <button
               onClick={handleJoinGame}
               disabled={isLoading || !connected}
-              className="rounded-xl w-48 border-2 border-[#D34F34] bg-black h-20 font-bold text-xl transition hover:cursor-pointer"
+              className="rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl transition hover:cursor-pointer"
               style={{ boxShadow: '5px 7px #D34F34' }}
             >
               Join Game
@@ -326,38 +438,72 @@ export default function Home() {
           // Right column (12,18,24,30,36,42,48,54)
           (col === 5 && row >= 1);
 
-        // Get character image index based on position
-        const characterIndex = index % characterImages.length;
-
+        // Calculate position in the frame sequence for both character rotation and color mapping
+        let framePosition = -1;
+        
+        // Top row (left to right) - positions 0-5
+        if (cellNumber <= 6) {
+          framePosition = cellNumber - 1;
+        }
+        // Right column (top to bottom, excluding corners) - positions 6-13
+        else if (col === 5 && row >= 1 && row <= 8) {
+          framePosition = 6 + (row - 1);
+        }
+        // Bottom row (right to left) - positions 14-19
+        else if (cellNumber >= 55) {
+          framePosition = 14 + (5 - col);
+        }
+        // Left column (bottom to top, excluding corners) - positions 20-23
+        else if (col === 0 && row >= 1 && row <= 8) {
+          framePosition = 20 + (8 - row);
+        }
+        
+        // Apply rotation offset to the frame position if this is a frame cell
+        const characterIndex = isFrame && framePosition !== -1
+          ? (framePosition + rotationOffset) % characterImages.length
+          : index % characterImages.length;
+        
         // Determine background color for frame cells
-        // For left column, alternate between first two colors
-        // For right column, alternate between last two colors
-        let bgColorIndex;
-        if (col === 0 && row >= 1) { // Left column
-          bgColorIndex = row % 2 === 0 ? 0 : 1;
-        } else if (col === 5 && row >= 1) { // Right column
-          bgColorIndex = row % 2 === 0 ? 4 : 5;
-        } else if (cellNumber <= 6) { // Top row
-          bgColorIndex = col;
-        } else if (cellNumber >= 55) { // Bottom row
-          bgColorIndex = col;
-        } else {
-          bgColorIndex = index % bgColors.length;
+        let bgColor = '#1f2937'; // Default dark gray for non-frame cells
+        
+        if (isFrame) {
+          if (framePosition !== -1 && framePosition < frameColors.length) {
+            // Use color from frameColors array for this frame position
+            bgColor = frameColors[framePosition];
+          } else {
+            // Fallback to original pattern if framePosition is invalid
+            let fallbackIndex = 0;
+            if (col === 0 && row >= 1) { // Left column
+              fallbackIndex = row % 2 === 0 ? 0 : 1;
+            } else if (col === 5 && row >= 1) { // Right column
+              fallbackIndex = row % 2 === 0 ? 4 : 5;
+            } else if (cellNumber <= 6) { // Top row
+              fallbackIndex = col % bgColors.length;
+            } else { // Bottom row
+              fallbackIndex = col % bgColors.length;
+            }
+            bgColor = bgColors[fallbackIndex];
+          }
         }
 
         return (
           <div
             key={`cell-${index}`}
-            className={`${isFrame ? bgColors[bgColorIndex] : 'bg-gray-900'} flex items-center justify-center `}
+            className="flex items-center justify-center"
+            style={{ backgroundColor: bgColor }}
           >
             {isFrame ? (
-              <div className="rounded-full overflow-hidden w-16 h-16 flex p-1">
+              <div className="rounded-full overflow-hidden w-16 h-16 flex p-2" 
+                   style={{ 
+                     filter: 'drop-shadow(3px 0 rgba(0, 0, 0, 0.7))',
+                     position: 'relative'
+                   }}>
                 <Image
                   src={characterImages[characterIndex].src}
                   alt={characterImages[characterIndex].alt}
                   width={64}
                   height={64}
-                  className="object-cover"
+                  className="object-cover rounded-full"
                 />
               </div>
             ) : (
