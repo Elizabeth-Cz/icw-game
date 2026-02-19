@@ -8,6 +8,9 @@ export interface Character {
 // Character constructor function
 export function createCharacter(id: string, name: string, avatarStyle: string = 'toon-head'): Character {
   const seed = encodeURIComponent(name);
+  
+  // We'll handle the PNG image replacement entirely on the frontend
+  // This ensures we don't have path resolution issues between backend and frontend
   return {
     id,
     name,

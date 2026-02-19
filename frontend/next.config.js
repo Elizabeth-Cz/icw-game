@@ -8,6 +8,8 @@ const nextConfig = {
         pathname: '**',
       },
     ],
+    // Allow importing images from the local assets directory
+    unoptimized: true,
   },
 };
 

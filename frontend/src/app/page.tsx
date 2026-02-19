@@ -2,8 +2,88 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useSocket } from "../context/SocketContext";
 import { useGame } from "../context/GameContext";
+
+// Import all character images dynamically
+import AlexImage from "../assets/Alex.png";
+import AnnaImage from "../assets/Anna.png";
+import BrianImage from "../assets/Brian.png";
+import DavidImage from "../assets/David.png";
+import DiogoImage from "../assets/Diogo.png";
+import DriesImage from "../assets/Dries.png";
+import ElouanImage from "../assets/Elouan.png";
+import FrankImage from "../assets/Frank.png";
+import GiriImage from "../assets/Giri.png";
+import HiteshImage from "../assets/Hitesh.png";
+import IvanImage from "../assets/Ivan.png";
+import IvanaImage from "../assets/Ivana.png";
+import JeeshanImage from "../assets/Jeeshan.png";
+import JesseImage from "../assets/Jesse.png";
+import JosImage from "../assets/Jos.png";
+import KarlImage from "../assets/Karl.png";
+import KevinImage from "../assets/Kevin.png";
+import LinhImage from "../assets/Linh.png";
+import LizImage from "../assets/Liz.png";
+import LouiseImage from "../assets/Louise.png";
+import LucImage from "../assets/Luc.png";
+import MariaImage from "../assets/Maria.png";
+import MichielImage from "../assets/Michiel.png";
+import MikeImage from "../assets/Mike.png";
+import NickImage from "../assets/Nick.png";
+import RalphImage from "../assets/Ralph.png";
+import SidImage from "../assets/Sid.png";
+import TarekImage from "../assets/Tarek.png";
+import TissamImage from "../assets/Tissam.png";
+import TonnyImage from "../assets/Tonny.png";
+import WalaImage from "../assets/Wala.png";
+import QuestionMarkImage from "../assets/question-mark.png";
+
+// Create an array of all character images for easier looping
+const characterImages = [
+  { src: AlexImage, alt: "Alex" },
+  { src: AnnaImage, alt: "Anna" },
+  { src: BrianImage, alt: "Brian" },
+  { src: DavidImage, alt: "David" },
+  { src: DiogoImage, alt: "Diogo" },
+  { src: DriesImage, alt: "Dries" },
+  { src: ElouanImage, alt: "Elouan" },
+  { src: FrankImage, alt: "Frank" },
+  { src: GiriImage, alt: "Giri" },
+  { src: HiteshImage, alt: "Hitesh" },
+  { src: IvanImage, alt: "Ivan" },
+  { src: IvanaImage, alt: "Ivana" },
+  { src: JeeshanImage, alt: "Jeeshan" },
+  { src: JesseImage, alt: "Jesse" },
+  { src: JosImage, alt: "Jos" },
+  { src: KarlImage, alt: "Karl" },
+  { src: KevinImage, alt: "Kevin" },
+  { src: LinhImage, alt: "Linh" },
+  { src: LizImage, alt: "Liz" },
+  { src: LouiseImage, alt: "Louise" },
+  { src: LucImage, alt: "Luc" },
+  { src: MariaImage, alt: "Maria" },
+  { src: MichielImage, alt: "Michiel" },
+  { src: MikeImage, alt: "Mike" },
+  { src: NickImage, alt: "Nick" },
+  { src: RalphImage, alt: "Ralph" },
+  { src: SidImage, alt: "Sid" },
+  { src: TarekImage, alt: "Tarek" },
+  { src: TissamImage, alt: "Tissam" },
+  { src: TonnyImage, alt: "Tonny" },
+  { src: WalaImage, alt: "Wala" },
+];
+
+// Define background colors for the border
+const bgColors = [
+  "bg-emerald-600",
+  "bg-yellow-500",
+  "bg-red-500",
+  "bg-pink-400",
+  "bg-blue-600",
+  "bg-teal-500",
+];
 
 // Main menu component
 export default function Home() {
@@ -28,6 +108,12 @@ export default function Home() {
         setError(null);
       }
     }, 1000);
+    
+    // Check if user wants to stay on home page (no auto-reconnect)
+    const stayOnHome = sessionStorage.getItem("stayOnHome");
+    if (stayOnHome === "true") {
+      return () => clearTimeout(clearInvalidTokenTimeout);
+    }
     
     // Only attempt reconnection if we're not coming from a "New Game" or "Join Game" action
     const freshStart = sessionStorage.getItem("freshStart");
@@ -106,6 +192,22 @@ export default function Home() {
     };
   }, [socket, router, setRoomCode, setPlayerId, setReconnectToken]);
 
+  // Set flag to stay on home page and prevent auto-reconnect
+  const stayOnHomePage = () => {
+    if (typeof window !== 'undefined') {
+      // Clear existing game data
+      localStorage.removeItem("reconnectToken");
+      localStorage.removeItem("roomCode");
+      localStorage.removeItem("playerId");
+      
+      // Set flag to stay on home page
+      sessionStorage.setItem("stayOnHome", "true");
+      
+      // Reload the page to apply the changes
+      window.location.reload();
+    }
+  };
+
   // Handle create game button click
   const handleCreateGame = () => {
     if (!socket || !connected) {
@@ -142,87 +244,179 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 p-4">
-      <main className="w-full max-w-md relative">
-        {/* Colorful border with character avatars */}
-        <div className="absolute inset-0 -m-4 p-4 grid grid-cols-6 gap-0 overflow-hidden">
-          {/* Top row */}
-          <div className="bg-emerald-600"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
-          <div className="bg-yellow-500"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
-          <div className="bg-red-500"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
-          <div className="bg-pink-400"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
-          <div className="bg-blue-600"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
-          <div className="bg-teal-500"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
-          
-          {/* Left and right columns */}
-          {Array.from({ length: 10 }).map((_, i) => (
-            <React.Fragment key={`row-${i}`}>
-              <div className={`bg-${['emerald-600', 'yellow-500', 'red-500', 'pink-400', 'blue-600'][i % 5]}`}>
-                <div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div>
+      <div className="w-full h-screen grid grid-cols-6 grid-rows-10 relative">
+        {/* Main content area - positioned absolutely to cover the inner cells and overlap with borders */}
+        <div className="absolute top-[5%] left-[10%] w-[80%] h-[90%] flex items-center justify-center">
+          <div className="rounded-xl bg-black p-6 border-4 border-cream-100 w-full h-full flex flex-col justify-evenly">
+            <div className="mb-8 text-center">
+              <div className="mb-6 bg-black rounded-xl p-5 border-4 border-cream-100 w-full flex justify-center">
+                <div className="relative inline-block">
+                  <h1 className="font-bold text-[#E25B45]" style={{ 
+                    fontFamily: 'var(--font-irish-grover)',
+                    textShadow: '-2px -2px 0 #E8DBBC, 2px -2px 0 #E8DBBC, -2px 2px 0 #E8DBBC, 2px 2px 0 #E8DBBC, 3px 3px 0px rgba(0,0,0,0.2)',
+                    letterSpacing: '1px',
+                    display: 'inline-block',
+                    position: 'relative',
+                    padding: '0 5px',
+                    fontSize: '6rem',
+                    textAlign: 'center'
+                  }}>
+                    <span style={{ display: 'inline-block', transform: 'rotate(-3deg)' }}>Guess</span>
+                    <br/>
+                    <span style={{ display: 'inline-block', transform: 'rotate(-1deg)', marginLeft: '10px' }}>Who</span>
+                  </h1>
+                  <Image 
+                    src={QuestionMarkImage} 
+                    alt="Question Mark" 
+                    width={200} 
+                    height={200} 
+                    style={{
+                      position: 'absolute',
+                      right: '-4.5rem',
+                      top: '50%',
+                      transform: 'translateY(-50%) rotate(5deg)',
+                      filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))'
+                    }}
+                  />
+                </div>
               </div>
-              <div className="col-span-4"></div>
-              <div className={`bg-${['teal-500', 'yellow-500', 'red-500', 'pink-400', 'emerald-600'][i % 5]}`}>
-                <div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div>
+              <div className="bg-gray-800 rounded-lg py-2 px-6 inline-block">
+                <h2 className="text-lg font-bold text-[#EAC006]" style={{ fontFamily: 'var(--font-jersey-10)' }}>• ICW Edition •</h2>
               </div>
-            </React.Fragment>
-          ))}
-          
-          {/* Bottom row */}
-          <div className="bg-teal-500"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
-          <div className="bg-yellow-500"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
-          <div className="bg-red-500"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
-          <div className="bg-pink-400"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
-          <div className="bg-blue-600"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
-          <div className="bg-emerald-600"><div className="rounded-full overflow-hidden bg-yellow-400 m-1"></div></div>
+            </div>
+            <div className="flex flex-col gap-6 mt-10 items-center tracking-widest text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-10)', fontSize: '1.2rem'}}>
+              <button
+                onClick={handleCreateGame}
+                disabled={isLoading || !connected}
+                className="rounded-xl w-64 border-4 border-[#0390A1] bg-black px-5 py-3 font-bold transition hover:bg-teal-900 disabled:opacity-50 shadow-lg"
+                style={{ boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)' }}
+              >
+                {isLoading ? "Creating..." : "New Game"}
+              </button>
+
+              <button
+                onClick={handleJoinGame}
+                disabled={isLoading || !connected}
+                className="rounded-xl w-64 border-4 border-red-500 bg-black px-5 py-3 font-bold transition hover:bg-red-900 disabled:opacity-50 shadow-lg"
+                style={{ boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)' }}
+              >
+                Join Game
+              </button>
+            </div>
+
+            {error && (
+              <div className="mt-2 rounded-md bg-red-900 border border-red-500 text-center text-xs text-red-300">
+                {error}
+              </div>
+            )}
+
+            {!connected && (
+              <div className="mt-2 rounded-md bg-yellow-900 border border-yellow-500 text-center text-xs text-yellow-300">
+                Connecting...
+              </div>
+            )}
+          </div>
         </div>
         
-        {/* Main content */}
-        <div className="relative z-10 rounded-xl bg-black p-8 border-4 border-cream-100">
-          <div className="mb-8 text-center">
-            <div className="mb-4 bg-black rounded-lg p-4 border-2 border-cream-100">
-              <h1 className="text-5xl font-bold text-red-500 drop-shadow-[0_2px_2px_rgba(255,255,255,0.3)]" style={{ fontFamily: 'fantasy, cursive' }}>Guess Who</h1>
-            </div>
-            <div className="bg-gray-800 rounded-lg py-2 px-4 inline-block">
-              <h2 className="text-xl font-bold text-yellow-400">• ICW Edition •</h2>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-6 mt-12">
-            <button
-              onClick={handleCreateGame}
-              disabled={isLoading || !connected}
-              className="rounded-lg border-2 border-teal-400 bg-black px-4 py-3 font-bold text-teal-400 transition hover:bg-teal-900 disabled:opacity-50"
-            >
-              {isLoading ? "Creating Game..." : "New Game"}
-            </button>
-
-            <button
-              onClick={handleJoinGame}
-              disabled={isLoading || !connected}
-              className="rounded-lg border-2 border-red-500 bg-black px-4 py-3 font-bold text-red-500 transition hover:bg-red-900 disabled:opacity-50"
-            >
-              Join Game
-            </button>
-          </div>
+        {/* Generate all 60 grid cells */}
+        {Array.from({ length: 60 }).map((_, index) => {
+          // Calculate the row and column for this index
+          const row = Math.floor(index / 6);
+          const col = index % 6;
+          const cellNumber = index + 1;
           
-          {/* ServiceNow logo */}
-          <div className="mt-12 text-center">
-            <p className="text-white text-lg font-bold">servicenow.</p>
-          </div>
+          // Check if this cell is part of the frame
+          const isFrame = 
+            // Top row (1-6)
+            cellNumber <= 6 || 
+            // Bottom row (55-60)
+            cellNumber >= 55 || 
+            // Left column (7,13,19,25,31,37,43,49)
+            (col === 0 && row >= 1) || 
+            // Right column (12,18,24,30,36,42,48,54)
+            (col === 5 && row >= 1);
+          
+          // Get character image index based on position
+          const characterIndex = index % characterImages.length;
+          
+          // Determine background color for frame cells
+          // For left column, alternate between first two colors
+          // For right column, alternate between last two colors
+          let bgColorIndex;
+          if (col === 0 && row >= 1) { // Left column
+            bgColorIndex = row % 2 === 0 ? 0 : 1;
+          } else if (col === 5 && row >= 1) { // Right column
+            bgColorIndex = row % 2 === 0 ? 4 : 5;
+          } else if (cellNumber <= 6) { // Top row
+            bgColorIndex = col;
+          } else if (cellNumber >= 55) { // Bottom row
+            bgColorIndex = col;
+          } else {
+            bgColorIndex = index % bgColors.length;
+          }
+          
+          return (
+            <div 
+              key={`cell-${index}`}
+              className={`${isFrame ? bgColors[bgColorIndex] : 'bg-gray-900'} flex items-center justify-center `}
+            >
+              {isFrame ? (
+                <div className="rounded-full overflow-hidden w-16 h-16 flex">
+                  <Image 
+                    src={characterImages[characterIndex].src} 
+                    alt={characterImages[characterIndex].alt} 
+                    width={64} 
+                    height={64} 
+                    className="object-cover" 
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-full flex">
+                  {/* Main content area - show in all non-frame cells */}
+                  {index === 22 && (
+                    <>
+                      <div className="mb-4 text-center">
+                        <div className="mb-4 bg-black rounded-lg p-3 border-2 border-cream-100">
+                        </div>
+                        <div className="bg-gray-800 rounded-lg py-1 px-2 inline-block">
+                          <h2 className="text-sm font-bold text-[#EAC006]" style={{ fontFamily: 'var(--font-jersey-10)' }}>• ICW Edition •</h2>
+                        </div>
+                      </div>
+                      <div className="flex flex-col mt-6 tracking-widest text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-10)', fontSize: '1rem'}}>
+                        <button
+                          onClick={handleCreateGame}
+                          disabled={isLoading || !connected}
+                          className="rounded-lg border-2 border-[#0390A1] bg-black px-3 py-2 font-bold transition hover:bg-teal-900 disabled:opacity-50"
+                        >
+                          {isLoading ? "Creating..." : "New Game"}
+                        </button>
 
-          {error && (
-            <div className="mt-4 rounded-md bg-red-900 border border-red-500 p-3 text-center text-sm text-red-300">
-              {error}
-            </div>
-          )}
+                        <button
+                          onClick={handleJoinGame}
+                          disabled={isLoading || !connected}
+                          className="rounded-lg border-2 border-red-500 bg-black px-3 py-2 font-bold transition hover:bg-red-900 disabled:opacity-50"
+                        >
+                          Join Game
+                        </button>
+                      </div>
+                      {error && (
+                        <div className="mt-2 rounded-md bg-red-900 border border-red-500  text-center text-xs text-red-300">
+                          {error}
+                        </div>
+                      )}
 
-          {!connected && (
-            <div className="mt-4 rounded-md bg-yellow-900 border border-yellow-500 p-3 text-center text-sm text-yellow-300">
-              Connecting to server...
+                      {!connected && (
+                        <div className="mt-2 rounded-md bg-yellow-900 border border-yellow-500  text-center text-xs text-yellow-300">
+                          Connecting...
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </main>
-    </div>
+          );
+        })}
+      </div>
   );
 }

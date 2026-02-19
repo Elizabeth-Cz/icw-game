@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Irish_Grover, Jersey_10 } from "next/font/google";
 import "./globals.css";
 import { SocketProvider } from "../context/SocketContext";
 import { GameProvider } from "../context/GameContext";
@@ -14,6 +14,19 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const irishGrover = Irish_Grover({
+  weight: ["400"],
+  variable: "--font-irish-grover",
+  subsets: ["latin"],
+});
+
+const jersey10 = Jersey_10({
+  weight: ["400"],
+  variable: "--font-jersey-10",
+  subsets: ["latin"],
+});
+
+
 export const metadata: Metadata = {
   title: "Guess Who - ICW Edition",
   description: "A real-time, two-player web application that replaces the physical Guess Who board",
@@ -27,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${irishGrover.variable} ${jersey10.variable} antialiased`}
       >
         <SocketProvider>
           <GameProvider>

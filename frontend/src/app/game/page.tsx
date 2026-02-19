@@ -267,9 +267,6 @@ export default function GameBoard() {
 
         {/* Character Grid */}
         <div className="rounded-lg bg-gray-900 p-4 sm:p-6 border border-gray-800">
-          <h2 className="mb-4 sm:mb-6 text-center text-lg font-bold text-yellow-400">
-            Characters
-          </h2>
           <div className="grid grid-cols-4 gap-2 xs:gap-3 sm:grid-cols-4 md:grid-cols-5">
             {characters.map((character) => (
               <div 
