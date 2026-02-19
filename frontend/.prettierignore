@@ -1,0 +1,11 @@
+# Build outputs
+.next/
+out/
+build/
+dist/
+
+# Node modules
+node_modules/
+
+# Generated files
+next-env.d.ts

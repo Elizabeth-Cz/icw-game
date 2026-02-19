@@ -24,18 +24,3 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
-
-/* Top row */
-.grid-item:nth-child(-n + 6),
-
-/* Bottom row */
-.grid-item:nth-child(n + 55),
-
-/* Left column (every 6th starting at 7) */
-.grid-item:nth-child(6n + 7),
-
-/* Right column (every 6th starting at 12) */
-.grid-item:nth-child(6n + 12) {
-  background-size: cover;
-  background-position: center;
-}

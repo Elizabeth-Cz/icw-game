@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Irish_Grover, Jersey_10 } from "next/font/google";
+import { Geist, Geist_Mono, Irish_Grover, Jersey_10, Jersey_25 } from "next/font/google";
 import "./globals.css";
 import { SocketProvider } from "../context/SocketContext";
 import { GameProvider } from "../context/GameContext";
@@ -26,6 +26,11 @@ const jersey10 = Jersey_10({
   subsets: ["latin"],
 });
 
+const jersey25 = Jersey_25({
+  weight: ["400"],
+  variable: "--font-jersey-25",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
   title: "Guess Who - ICW Edition",
@@ -40,7 +45,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${irishGrover.variable} ${jersey10.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${irishGrover.variable} ${jersey10.variable} ${jersey25.variable} antialiased`}
       >
         <SocketProvider>
           <GameProvider>

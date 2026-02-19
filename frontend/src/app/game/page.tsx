@@ -26,16 +26,7 @@ export default function GameBoard() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [isPlayAgainModalOpen, setIsPlayAgainModalOpen] = useState<boolean>(false);
 
-  // Generate dummy characters for initial render
-  useEffect(() => {
-    // Generate 24 dummy characters for the grid layout
-    const dummyCharacters = Array.from({ length: 24 }, (_, i) => ({
-      id: `dummy-${i}`,
-      name: `Character ${i + 1}`,
-      avatarUrl: `https://api.dicebear.com/9.x/toon-head/svg?seed=${i}`,
-    }));
-    setCharacters(dummyCharacters);
-  }, []);
+  // Characters are now loaded from the backend
 
   // Redirect if no room code
   useEffect(() => {

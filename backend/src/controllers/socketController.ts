@@ -35,6 +35,14 @@ export enum SocketEvents {
 export const setupSocketHandlers = (io: Server) => {
   // Initialize characters on server startup
   characterService.initializeCharacters();
+  
+  // Set up room cleanup interval (check every minute, remove rooms inactive for 5 minutes)
+  const CLEANUP_INTERVAL_MS = 60 * 1000; // 1 minute
+  const ROOM_TIMEOUT_MINUTES = 5; // 5 minutes
+  
+  setInterval(() => {
+    roomService.cleanupInactiveRooms(ROOM_TIMEOUT_MINUTES);
+  }, CLEANUP_INTERVAL_MS);
 
   io.on('connection', (socket: Socket) => {
     console.log(`User connected: ${socket.id}`);
@@ -166,16 +174,21 @@ export const setupSocketHandlers = (io: Server) => {
     // Request reconnection
     socket.on(SocketEvents.REQUEST_RECONNECT, ({ reconnectToken }) => {
       try {
+        console.log(`Reconnection attempt with token: ${reconnectToken.substring(0, 5)}...`);
+        
         // Find room and player by reconnect token
         const { room, player } = roomService.findPlayerByReconnectToken(reconnectToken);
         
         if (!room || !player) {
+          console.log('Invalid reconnect token or room/player not found');
           return socket.emit(SocketEvents.ROOM_ERROR, {
             message: 'Invalid reconnect token',
           });
         }
+        
+        console.log(`Found room ${room.roomCode} for reconnection, player ID: ${player.playerId}`);
 
-        // Update player's socket ID
+        // Update player's socket ID and mark as connected
         roomService.updatePlayerSocketId(room.roomCode, player.playerId, socket.id);
         
         // Join socket to room
@@ -185,6 +198,8 @@ export const setupSocketHandlers = (io: Server) => {
         const secretCharacter = player.secretCharacterId 
           ? characterService.getCharacterById(player.secretCharacterId)
           : null;
+          
+        console.log(`Reconnecting player with secret character: ${secretCharacter?.name || 'none'}`);
 
         // Send reconnection success to client
         socket.emit(SocketEvents.RECONNECT_SUCCESS, {
@@ -197,15 +212,29 @@ export const setupSocketHandlers = (io: Server) => {
         
         // If the player has a character order, request characters to get them in the right order
         if (player.characterOrder && player.characterOrder.length > 0) {
-          // Trigger a get_all_characters request to get the ordered characters
-          socket.emit(SocketEvents.GET_ALL_CHARACTERS, {
-            roomCode: room.roomCode,
-            playerId: player.playerId
-          });
+          console.log(`Player has character order, sending characters`);
+          // Get the game characters for this room
+          const gameCharacters = characterService.getGameCharacters(room.roomCode);
+          
+          // Create a map of character ID to character object
+          const characterMap = gameCharacters.reduce((map, char) => {
+            map[char.id] = char;
+            return map;
+          }, {} as Record<string, Character>);
+          
+          // Reorder characters based on player's order
+          const orderedCharacters = player.characterOrder.map(id => characterMap[id])
+            .filter(char => char !== undefined); // Filter out any undefined characters
+          
+          // Send the ordered characters
+          socket.emit(SocketEvents.ALL_CHARACTERS, { characters: orderedCharacters });
         }
 
         // Notify other player that this player has reconnected
         socket.to(room.roomCode).emit('player_reconnected');
+        
+        // Update room's last activity timestamp
+        room.lastActivity = new Date();
       } catch (error) {
         console.error('Error reconnecting:', error);
         socket.emit(SocketEvents.ROOM_ERROR, {

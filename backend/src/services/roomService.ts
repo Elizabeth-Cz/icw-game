@@ -204,15 +204,24 @@ export class RoomService {
     room.lastActivity = new Date();
   }
 
-  // Clean up inactive rooms (for scheduled cleanup)
-  cleanupInactiveRooms(maxInactivityMinutes: number = 30): void {
+  // Clean up inactive rooms and handle disconnected players
+  cleanupInactiveRooms(maxInactivityMinutes: number = 5): void {
     const now = new Date();
+    console.log(`Running room cleanup, checking for rooms inactive for ${maxInactivityMinutes} minutes...`);
     
     for (const roomCode in this.rooms) {
       const room = this.rooms[roomCode];
       const inactiveMinutes = (now.getTime() - room.lastActivity.getTime()) / (1000 * 60);
       
+      // Check if all players are disconnected
+      const allDisconnected = room.players.length > 0 && room.players.every(p => !p.connected);
+      
+      // Log room status
+      console.log(`Room ${roomCode}: inactive for ${inactiveMinutes.toFixed(1)} minutes, all disconnected: ${allDisconnected}`);
+      
+      // Delete room if it's been inactive for too long
       if (inactiveMinutes >= maxInactivityMinutes) {
+        console.log(`Deleting inactive room ${roomCode} (inactive for ${inactiveMinutes.toFixed(1)} minutes)`);
         this.deleteRoom(roomCode);
       }
     }

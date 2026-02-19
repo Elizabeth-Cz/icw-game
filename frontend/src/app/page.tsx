@@ -97,7 +97,7 @@ export default function Home() {
   useEffect(() => {
     // Clear error on mount to prevent showing old errors
     setError(null);
-    
+
     // Always clear any invalid reconnect tokens on page load
     const clearInvalidTokenTimeout = setTimeout(() => {
       if (error && error.includes("Invalid reconnect token")) {
@@ -108,13 +108,13 @@ export default function Home() {
         setError(null);
       }
     }, 1000);
-    
+
     // Check if user wants to stay on home page (no auto-reconnect)
     const stayOnHome = sessionStorage.getItem("stayOnHome");
     if (stayOnHome === "true") {
       return () => clearTimeout(clearInvalidTokenTimeout);
     }
-    
+
     // Only attempt reconnection if we're not coming from a "New Game" or "Join Game" action
     const freshStart = sessionStorage.getItem("freshStart");
     if (freshStart === "true") {
@@ -122,12 +122,12 @@ export default function Home() {
       sessionStorage.removeItem("freshStart");
       return () => clearTimeout(clearInvalidTokenTimeout);
     }
-    
+
     // Check if we have a valid token before attempting reconnection
     const reconnectToken = localStorage.getItem("reconnectToken");
     const roomCode = localStorage.getItem("roomCode");
     const playerId = localStorage.getItem("playerId");
-    
+
     // Only attempt reconnection if we have ALL required pieces of information
     if (reconnectToken && roomCode && playerId && socket && connected) {
       console.log('Attempting reconnection with stored token');
@@ -140,7 +140,7 @@ export default function Home() {
       localStorage.removeItem("roomCode");
       localStorage.removeItem("playerId");
     }
-    
+
     return () => clearTimeout(clearInvalidTokenTimeout);
   }, [socket, connected, error]);
 
@@ -169,7 +169,7 @@ export default function Home() {
     const handleError = ({ message }: { message: string }) => {
       setError(message);
       setIsLoading(false);
-      
+
       // If we get an invalid reconnect token error, clear the token from localStorage
       if (message && message.includes('Invalid reconnect token')) {
         console.log('Clearing invalid reconnect token');
@@ -192,21 +192,7 @@ export default function Home() {
     };
   }, [socket, router, setRoomCode, setPlayerId, setReconnectToken]);
 
-  // Set flag to stay on home page and prevent auto-reconnect
-  const stayOnHomePage = () => {
-    if (typeof window !== 'undefined') {
-      // Clear existing game data
-      localStorage.removeItem("reconnectToken");
-      localStorage.removeItem("roomCode");
-      localStorage.removeItem("playerId");
-      
-      // Set flag to stay on home page
-      sessionStorage.setItem("stayOnHome", "true");
-      
-      // Reload the page to apply the changes
-      window.location.reload();
-    }
-  };
+  // Function removed - unused
 
   // Handle create game button click
   const handleCreateGame = () => {
@@ -219,11 +205,11 @@ export default function Home() {
     localStorage.removeItem("reconnectToken");
     localStorage.removeItem("roomCode");
     localStorage.removeItem("playerId");
-    
+
     // Set a flag to indicate this is a fresh start
     // This prevents reconnection attempts on page refresh
     sessionStorage.setItem("freshStart", "true");
-    
+
     setIsLoading(true);
     setError(null);
     socket.emit("create_room");
@@ -235,188 +221,153 @@ export default function Home() {
     localStorage.removeItem("reconnectToken");
     localStorage.removeItem("roomCode");
     localStorage.removeItem("playerId");
-    
+
     // Set a flag to indicate this is a fresh start
     // This prevents reconnection attempts on page refresh
     sessionStorage.setItem("freshStart", "true");
-    
+
     router.push("/join-game");
   };
 
   return (
-      <div className="w-full h-screen grid grid-cols-6 grid-rows-10 relative">
-        {/* Main content area - positioned absolutely to cover the inner cells and overlap with borders */}
-        <div className="absolute top-[5%] left-[10%] w-[80%] h-[90%] flex items-center justify-center">
-          <div className="rounded-xl bg-black p-6 border-4 border-cream-100 w-full h-full flex flex-col justify-evenly">
-            <div className="mb-8 text-center">
-              <div className="mb-6 bg-black rounded-xl p-5 border-4 border-cream-100 w-full flex justify-center">
+    <div className="w-full h-screen grid grid-cols-6 grid-rows-10 relative">
+      {/* Main content area - positioned absolutely to cover the inner cells but not overlap with borders */}
+      <div className="absolute top-[10%] left-[16.67%] w-[66.66%] h-[80%] flex items-center justify-center">
+        <div className="rounded-xl bg-black border-cream-100 w-full h-full flex flex-col justify-between">
+          <div className="text-center">
+            <div className="mb-6 bg-black rounded-4xl border-cream-100 w-[130%] -ml-[15%] relative z-10 border-12 border-black">
+              <div className="border-5 border-[#E8DBBC] rounded-3xl">
                 <div className="relative inline-block">
-                  <h1 className="font-bold text-[#E25B45]" style={{ 
+                  <h1 className="font-bold text-[#E25B45] mr-6" style={{
                     fontFamily: 'var(--font-irish-grover)',
                     textShadow: '-2px -2px 0 #E8DBBC, 2px -2px 0 #E8DBBC, -2px 2px 0 #E8DBBC, 2px 2px 0 #E8DBBC, 3px 3px 0px rgba(0,0,0,0.2)',
-                    letterSpacing: '1px',
                     display: 'inline-block',
                     position: 'relative',
-                    padding: '0 5px',
-                    fontSize: '6rem',
-                    textAlign: 'center'
+                    fontSize: '4rem',
+                    textAlign: 'left',
                   }}>
-                    <span style={{ display: 'inline-block', transform: 'rotate(-3deg)' }}>Guess</span>
-                    <br/>
-                    <span style={{ display: 'inline-block', transform: 'rotate(-1deg)', marginLeft: '10px' }}>Who</span>
+                    <span style={{ position: 'relative', right: '2rem', bottom: '-1rem' }}>Guess</span>
+                    <br />
+                    <span style={{ position: 'relative', right: '2rem', top: '-1rem' }}>Who</span>
                   </h1>
-                  <Image 
-                    src={QuestionMarkImage} 
-                    alt="Question Mark" 
-                    width={200} 
-                    height={200} 
+                  <Image
+                    src={QuestionMarkImage}
+                    alt="Question Mark"
+                    width={160}
+                    height={160}
                     style={{
                       position: 'absolute',
-                      right: '-4.5rem',
+                      right: '-3rem',
                       top: '50%',
                       transform: 'translateY(-50%) rotate(5deg)',
-                      filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))'
+                      filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))',
+                      overflow: 'hidden',
+                      zIndex: -2
                     }}
                   />
+                  <div>
+                  </div>
                 </div>
               </div>
-              <div className="bg-gray-800 rounded-lg py-2 px-6 inline-block">
-                <h2 className="text-lg font-bold text-[#EAC006]" style={{ fontFamily: 'var(--font-jersey-10)' }}>• ICW Edition •</h2>
-              </div>
             </div>
-            <div className="flex flex-col gap-6 mt-10 items-center tracking-widest text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-10)', fontSize: '1.2rem'}}>
-              <button
-                onClick={handleCreateGame}
-                disabled={isLoading || !connected}
-                className="rounded-xl w-64 border-4 border-[#0390A1] bg-black px-5 py-3 font-bold transition hover:bg-teal-900 disabled:opacity-50 shadow-lg"
-                style={{ boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)' }}
-              >
-                {isLoading ? "Creating..." : "New Game"}
-              </button>
-
-              <button
-                onClick={handleJoinGame}
-                disabled={isLoading || !connected}
-                className="rounded-xl w-64 border-4 border-red-500 bg-black px-5 py-3 font-bold transition hover:bg-red-900 disabled:opacity-50 shadow-lg"
-                style={{ boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)' }}
-              >
-                Join Game
-              </button>
+            <div className="bg-gray-800 rounded-lg py-2 px-6 mt-10 inline-block">
+              <h2 className="text-4xl font-bold text-[#EAC006]" style={{ fontFamily: 'var(--font-jersey-10)' }}>• ICW Edition •</h2>
             </div>
+          </div>
+          <div className="flex flex-col gap-6 mb-15 items-center tracking-widest text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-25)' }}>
+            <button
+              onClick={handleCreateGame}
+              disabled={isLoading || !connected}
+              className="rounded-xl w-48 border-2 border-[#0390A1] bg-black h-20 font-bold text-xl transition hover:cursor-pointer"
+              style={{ boxShadow: '5px 7px #0390A1' }}
+            >
+              {isLoading ? "Creating..." : "New Game"}
+            </button>
 
-            {error && (
-              <div className="mt-2 rounded-md bg-red-900 border border-red-500 text-center text-xs text-red-300">
-                {error}
+            <button
+              onClick={handleJoinGame}
+              disabled={isLoading || !connected}
+              className="rounded-xl w-48 border-2 border-[#D34F34] bg-black h-20 font-bold text-xl transition hover:cursor-pointer"
+              style={{ boxShadow: '5px 7px #D34F34' }}
+            >
+              Join Game
+            </button>
+          </div>
+
+          {error && (
+            <div className="mt-2 rounded-md bg-red-900 border border-red-500 text-center text-xs text-red-300">
+              {error}
+            </div>
+          )}
+
+          {!connected && (
+            <div className="mt-2 rounded-md bg-yellow-900 border border-yellow-500 text-center text-xs text-yellow-300">
+              Connecting...
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Generate all 60 grid cells */}
+      {Array.from({ length: 60 }).map((_, index) => {
+        // Calculate the row and column for this index
+        const row = Math.floor(index / 6);
+        const col = index % 6;
+        const cellNumber = index + 1;
+
+        // Check if this cell is part of the frame
+        const isFrame =
+          // Top row (1-6)
+          cellNumber <= 6 ||
+          // Bottom row (55-60)
+          cellNumber >= 55 ||
+          // Left column (7,13,19,25,31,37,43,49)
+          (col === 0 && row >= 1) ||
+          // Right column (12,18,24,30,36,42,48,54)
+          (col === 5 && row >= 1);
+
+        // Get character image index based on position
+        const characterIndex = index % characterImages.length;
+
+        // Determine background color for frame cells
+        // For left column, alternate between first two colors
+        // For right column, alternate between last two colors
+        let bgColorIndex;
+        if (col === 0 && row >= 1) { // Left column
+          bgColorIndex = row % 2 === 0 ? 0 : 1;
+        } else if (col === 5 && row >= 1) { // Right column
+          bgColorIndex = row % 2 === 0 ? 4 : 5;
+        } else if (cellNumber <= 6) { // Top row
+          bgColorIndex = col;
+        } else if (cellNumber >= 55) { // Bottom row
+          bgColorIndex = col;
+        } else {
+          bgColorIndex = index % bgColors.length;
+        }
+
+        return (
+          <div
+            key={`cell-${index}`}
+            className={`${isFrame ? bgColors[bgColorIndex] : 'bg-gray-900'} flex items-center justify-center `}
+          >
+            {isFrame ? (
+              <div className="rounded-full overflow-hidden w-16 h-16 flex p-1">
+                <Image
+                  src={characterImages[characterIndex].src}
+                  alt={characterImages[characterIndex].alt}
+                  width={64}
+                  height={64}
+                  className="object-cover"
+                />
               </div>
-            )}
-
-            {!connected && (
-              <div className="mt-2 rounded-md bg-yellow-900 border border-yellow-500 text-center text-xs text-yellow-300">
-                Connecting...
+            ) : (
+              <div className="w-full h-full flex">
+                {/* Non-frame cells are empty - main content is handled by the absolute positioned div */}
               </div>
             )}
           </div>
-        </div>
-        
-        {/* Generate all 60 grid cells */}
-        {Array.from({ length: 60 }).map((_, index) => {
-          // Calculate the row and column for this index
-          const row = Math.floor(index / 6);
-          const col = index % 6;
-          const cellNumber = index + 1;
-          
-          // Check if this cell is part of the frame
-          const isFrame = 
-            // Top row (1-6)
-            cellNumber <= 6 || 
-            // Bottom row (55-60)
-            cellNumber >= 55 || 
-            // Left column (7,13,19,25,31,37,43,49)
-            (col === 0 && row >= 1) || 
-            // Right column (12,18,24,30,36,42,48,54)
-            (col === 5 && row >= 1);
-          
-          // Get character image index based on position
-          const characterIndex = index % characterImages.length;
-          
-          // Determine background color for frame cells
-          // For left column, alternate between first two colors
-          // For right column, alternate between last two colors
-          let bgColorIndex;
-          if (col === 0 && row >= 1) { // Left column
-            bgColorIndex = row % 2 === 0 ? 0 : 1;
-          } else if (col === 5 && row >= 1) { // Right column
-            bgColorIndex = row % 2 === 0 ? 4 : 5;
-          } else if (cellNumber <= 6) { // Top row
-            bgColorIndex = col;
-          } else if (cellNumber >= 55) { // Bottom row
-            bgColorIndex = col;
-          } else {
-            bgColorIndex = index % bgColors.length;
-          }
-          
-          return (
-            <div 
-              key={`cell-${index}`}
-              className={`${isFrame ? bgColors[bgColorIndex] : 'bg-gray-900'} flex items-center justify-center `}
-            >
-              {isFrame ? (
-                <div className="rounded-full overflow-hidden w-16 h-16 flex">
-                  <Image 
-                    src={characterImages[characterIndex].src} 
-                    alt={characterImages[characterIndex].alt} 
-                    width={64} 
-                    height={64} 
-                    className="object-cover" 
-                  />
-                </div>
-              ) : (
-                <div className="w-full h-full flex">
-                  {/* Main content area - show in all non-frame cells */}
-                  {index === 22 && (
-                    <>
-                      <div className="mb-4 text-center">
-                        <div className="mb-4 bg-black rounded-lg p-3 border-2 border-cream-100">
-                        </div>
-                        <div className="bg-gray-800 rounded-lg py-1 px-2 inline-block">
-                          <h2 className="text-sm font-bold text-[#EAC006]" style={{ fontFamily: 'var(--font-jersey-10)' }}>• ICW Edition •</h2>
-                        </div>
-                      </div>
-                      <div className="flex flex-col mt-6 tracking-widest text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-10)', fontSize: '1rem'}}>
-                        <button
-                          onClick={handleCreateGame}
-                          disabled={isLoading || !connected}
-                          className="rounded-lg border-2 border-[#0390A1] bg-black px-3 py-2 font-bold transition hover:bg-teal-900 disabled:opacity-50"
-                        >
-                          {isLoading ? "Creating..." : "New Game"}
-                        </button>
-
-                        <button
-                          onClick={handleJoinGame}
-                          disabled={isLoading || !connected}
-                          className="rounded-lg border-2 border-red-500 bg-black px-3 py-2 font-bold transition hover:bg-red-900 disabled:opacity-50"
-                        >
-                          Join Game
-                        </button>
-                      </div>
-                      {error && (
-                        <div className="mt-2 rounded-md bg-red-900 border border-red-500  text-center text-xs text-red-300">
-                          {error}
-                        </div>
-                      )}
-
-                      {!connected && (
-                        <div className="mt-2 rounded-md bg-yellow-900 border border-yellow-500  text-center text-xs text-yellow-300">
-                          Connecting...
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+        );
+      })}
+    </div>
   );
 }

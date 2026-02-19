@@ -1,12 +1,38 @@
 import React from 'react';
 import Image from 'next/image';
 import { Character } from '../context/GameContext';
-// Import all PNG images
+// Import all character images dynamically
+import AlexImage from '../assets/Alex.png';
+import AnnaImage from '../assets/Anna.png';
+import BrianImage from '../assets/Brian.png';
+import DavidImage from '../assets/David.png';
+import DiogoImage from '../assets/Diogo.png';
+import DriesImage from '../assets/Dries.png';
+import ElouanImage from '../assets/Elouan.png';
+import FrankImage from '../assets/Frank.png';
+import GiriImage from '../assets/Giri.png';
+import HiteshImage from '../assets/Hitesh.png';
+import IvanImage from '../assets/Ivan.png';
+import IvanaImage from '../assets/Ivana.png';
+import JeeshanImage from '../assets/Jeeshan.png';
+import JesseImage from '../assets/Jesse.png';
+import JosImage from '../assets/Jos.png';
+import KarlImage from '../assets/Karl.png';
+import KevinImage from '../assets/Kevin.png';
+import LinhImage from '../assets/Linh.png';
 import LizImage from '../assets/Liz.png';
 import LouiseImage from '../assets/Louise.png';
+import LucImage from '../assets/Luc.png';
+import MariaImage from '../assets/Maria.png';
+import MichielImage from '../assets/Michiel.png';
+import MikeImage from '../assets/Mike.png';
 import NickImage from '../assets/Nick.png';
 import RalphImage from '../assets/Ralph.png';
+import SidImage from '../assets/Sid.png';
+import TarekImage from '../assets/Tarek.png';
+import TissamImage from '../assets/Tissam.png';
 import TonnyImage from '../assets/Tonny.png';
+import WalaImage from '../assets/Wala.png';
 
 interface CharacterCardProps {
   character: Character;
@@ -17,11 +43,37 @@ interface CharacterCardProps {
 
 // Map of character names to their PNG images
 const characterImages: Record<string, any> = {
+  'Alex': AlexImage,
+  'Anna': AnnaImage,
+  'Brian': BrianImage,
+  'David': DavidImage,
+  'Diogo': DiogoImage,
+  'Dries': DriesImage,
+  'Elouan': ElouanImage,
+  'Frank': FrankImage,
+  'Giri': GiriImage,
+  'Hitesh': HiteshImage,
+  'Ivan': IvanImage,
+  'Ivana': IvanaImage,
+  'Jeeshan': JeeshanImage,
+  'Jesse': JesseImage,
+  'Jos': JosImage,
+  'Karl': KarlImage,
+  'Kevin': KevinImage,
+  'Linh': LinhImage,
   'Liz': LizImage,
   'Louise': LouiseImage,
+  'Luc': LucImage,
+  'Maria': MariaImage,
+  'Michiel': MichielImage,
+  'Mike': MikeImage,
   'Nick': NickImage,
   'Ralph': RalphImage,
-  'Tonny': TonnyImage
+  'Sid': SidImage,
+  'Tarek': TarekImage,
+  'Tissam': TissamImage,
+  'Tonny': TonnyImage,
+  'Wala': WalaImage
 };
 
 const CharacterCard: React.FC<CharacterCardProps> = ({
@@ -30,14 +82,9 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
   isSecret = false,
   onClick,
 }) => {
-  // Determine the image source based on character name
+  // Get image source from our imported images map
   const getImageSrc = () => {
-    // Check if we have a PNG image for this character
-    if (characterImages[character.name]) {
-      return characterImages[character.name];
-    }
-    // Otherwise use the avatarUrl from the character object
-    return character.avatarUrl;
+    return characterImages[character.name];
   };
 
   return (
