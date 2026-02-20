@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useSocket } from "../context/SocketContext";
@@ -121,29 +121,25 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rotationOffset, setRotationOffset] = useState(0); // Track the current rotation position
-  const [isAnimationEnabled, setIsAnimationEnabled] = useState(false); // Toggle for animation
-  // Initialize with random colors from different families
+  const [isAnimationEnabled, setIsAnimationEnabled] = useState(true); // Toggle for animation
+  const [isMouseDown, setIsMouseDown] = useState(false); // Track if mouse is being held down
+  // Initialize with static colors first to avoid hydration mismatch
   const [frameColors, setFrameColors] = useState<string[]>(() => {
+    // Start with a static pattern for initial render to avoid hydration errors
     const initialColors: string[] = [];
-    let lastFamilyIndex = -1;
     
     for (let i = 0; i < 24; i++) {
-      // Select a different family than the last one
-      let familyIndex;
-      do {
-        familyIndex = Math.floor(Math.random() * colorFamilies.length);
-      } while (familyIndex === lastFamilyIndex);
-      
-      // Select a random color from the family
-      const family = colorFamilies[familyIndex];
-      const colorIndex = Math.floor(Math.random() * family.length);
-      initialColors.push(family[colorIndex]);
-      
-      lastFamilyIndex = familyIndex;
+      // Use a deterministic pattern based on position
+      const familyIndex = i % colorFamilies.length;
+      const colorIndex = Math.floor(i / colorFamilies.length) % 3;
+      initialColors.push(colorFamilies[familyIndex][colorIndex]);
     }
     
     return initialColors;
   });
+  
+  // Flag to track if we're on client side
+  const [isClient, setIsClient] = useState(false);
 
   // Expose animation toggle to window object for programmatic control
   useEffect(() => {
@@ -176,6 +172,37 @@ export default function Home() {
       delete window.getAnimationState;
     };
   }, [isAnimationEnabled]);
+
+  // Set isClient to true once component mounts (client-side only)
+  useEffect(() => {
+    setIsClient(true);
+    
+    // Add event listeners for mouse events
+    const handleMouseDown = () => setIsMouseDown(true);
+    const handleMouseUp = () => setIsMouseDown(false);
+    
+    // Add touch events for mobile devices
+    const handleTouchStart = () => setIsMouseDown(true);
+    const handleTouchEnd = () => setIsMouseDown(false);
+    
+    // Add the event listeners to the document
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchstart', handleTouchStart);
+    document.addEventListener('touchend', handleTouchEnd);
+    
+    // Also handle mouse leaving the window
+    document.addEventListener('mouseleave', handleMouseUp);
+    
+    // Clean up function to remove event listeners
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('mouseleave', handleMouseUp);
+    };
+  }, []);
 
   // Check for reconnect token on mount
   useEffect(() => {
@@ -230,8 +257,8 @@ export default function Home() {
 
   // Animation effect for rotating frame elements with random colors
   useEffect(() => {
-    // Only set up the interval if animation is enabled
-    if (!isAnimationEnabled) return;
+    // Only set up the interval if animation is enabled AND mouse is not being held down
+    if (!isAnimationEnabled || isMouseDown) return;
     
     const animationInterval = setInterval(() => {
       // Update rotation for character images
@@ -255,7 +282,7 @@ export default function Home() {
     }, 300);
     
     return () => clearInterval(animationInterval);
-  }, [isAnimationEnabled]); // Re-run effect when animation toggle changes
+  }, [isAnimationEnabled, isMouseDown]); // Re-run effect when animation toggle or mouse state changes
 
   // Listen for socket events
   useEffect(() => {
