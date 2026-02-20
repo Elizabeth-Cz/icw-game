@@ -8,9 +8,10 @@ import { useGame } from "../../context/GameContext";
 export default function JoinGame() {
   const router = useRouter();
   const { socket, connected } = useSocket();
-  const { setRoomCode, setPlayerId, setReconnectToken } = useGame();
-  
+  const { setRoomCode, setPlayerId, setReconnectToken, setPlayerName } = useGame();
+
   const [roomCodeInput, setRoomCodeInput] = useState("");
+  const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,11 +21,24 @@ export default function JoinGame() {
 
     // Handle room join response
     const handleRoomJoined = ({ roomCode, playerId, reconnectToken }: any) => {
+      console.log('Room joined:', { roomCode, playerId });
+
+      // Store the data
       setRoomCode(roomCode);
       setPlayerId(playerId);
       setReconnectToken(reconnectToken);
       setIsLoading(false);
-      router.push(`/enter-name?roomCode=${roomCode}`);
+
+      // Submit name immediately
+      setPlayerName(name);
+      socket.emit("submit_name", {
+        roomCode,
+        playerId,
+        name,
+      });
+
+      // Navigate to game
+      router.push(`/game?roomCode=${roomCode}`);
     };
 
     // Handle errors
@@ -42,12 +56,12 @@ export default function JoinGame() {
       socket.off("room_joined", handleRoomJoined);
       socket.off("room_error", handleError);
     };
-  }, [socket, router, setRoomCode, setPlayerId, setReconnectToken]);
+  }, [socket, router, name, setRoomCode, setPlayerId, setReconnectToken, setPlayerName]);
 
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!socket || !connected) {
       setError("Socket connection not established. Please try again.");
       return;
@@ -59,8 +73,16 @@ export default function JoinGame() {
       return;
     }
 
+    // Validate name
+    if (!name.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
+
+    // Join room with room code
     socket.emit("join_room", { roomCode: roomCodeInput });
   };
 
@@ -70,11 +92,10 @@ export default function JoinGame() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-blue-100 p-4">
-      <main className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
+    <div className="p-12 bg-[#1C1817] text-[#D8C8AE] h-screen text-center">
         <button
           onClick={handleBack}
-          className="mb-6 flex items-center text-blue-600 hover:text-blue-800"
+          className="mr-auto flex"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -90,47 +111,59 @@ export default function JoinGame() {
           </svg>
           Back
         </button>
-
-        <div className="mb-8 text-center">
-          <h1 className="mb-4 text-2xl font-bold text-blue-800">Join Game</h1>
-          <p className="text-sm text-gray-600">
-            Enter the 6-digit code provided by your opponent
-          </p>
+      <main className="h-full flex flex-col items-center p-8 gap-6">
+        <div className="bg-gray-800 rounded-lg py-2 px-6 inline-block w-64">
+          <h1 className="text-4xl font-bold text-[#EAC006]" style={{ fontFamily: 'var(--font-jersey-10)' }}>• Join Game •</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label htmlFor="roomCode" className="mb-1 block text-sm font-medium text-gray-700">
-              Room Code
+        <form onSubmit={handleSubmit} className="flex flex-col h-full justify-evenly gap-10" style={{ fontFamily: 'var(--font-jersey-25)' }}>
+          <div className="flex flex-col items-center text-xl gap-4">
+            <label htmlFor="roomCode" className="">
+              Enter the 6 digit code
             </label>
             <input
               type="text"
               id="roomCode"
               value={roomCodeInput}
-              onChange={(e) => setRoomCodeInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="Enter 6-digit code"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-center text-2xl tracking-wider focus:border-blue-500 focus:outline-none"
-              maxLength={6}
+              onChange={(e) => setRoomCodeInput(e.target.value)}
+              className="rounded-xl w-48 border-2 border-[#0390A1] bg-[#1C1817] h-20 font-bold text-xl text-center"
+              style={{ boxShadow: '5px 7px #0390A1' }}              maxLength={6}
+              required
+            />
+          </div>
+
+          <div className="flex flex-col items-center text-xl gap-4">
+            <label htmlFor="name" className="">
+              Your Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="rounded-xl w-48 border-2 border-[#0390A1] bg-[#1C1817] h-20 font-bold text-xl text-center"
+              style={{ boxShadow: '5px 7px #0390A1' }}                 maxLength={20}
               required
             />
           </div>
 
           <button
             type="submit"
-            disabled={isLoading || !connected || roomCodeInput.length !== 6}
-            className="rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700 disabled:bg-gray-400"
+            disabled={isLoading || !connected || roomCodeInput.length !== 6 || !name.trim()}
+                          className="w-full rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl"
+              style={{ boxShadow: '5px 7px #D34F34' }}
           >
-            {isLoading ? "Joining..." : "Join Game"}
+            {isLoading ? "Joining..." : "Continue"}
           </button>
 
           {error && (
-            <div className="mt-2 rounded-md bg-red-50 p-3 text-center text-sm text-red-600">
+            <div className="">
               {error}
             </div>
           )}
 
           {!connected && (
-            <div className="mt-2 rounded-md bg-yellow-50 p-3 text-center text-sm text-yellow-700">
+            <div className="">
               Connecting to server...
             </div>
           )}

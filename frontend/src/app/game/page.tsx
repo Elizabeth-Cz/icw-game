@@ -23,7 +23,8 @@ export default function GameBoard() {
   
   const [error, setError] = useState<string | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
-  // const [isPlayAgainModalOpen, setIsPlayAgainModalOpen] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Characters are now loaded from the backend
 
@@ -34,6 +35,32 @@ export default function GameBoard() {
     }
   }, [roomCode, router]);
 
+  // Retry mechanism for loading characters
+  useEffect(() => {
+    if (!socket || !roomCode || !gameState.playerId) return;
+    
+    // Set up retry timer if we don't have characters yet
+    const retryTimer = setTimeout(() => {
+      if (isLoading && retryCount < 5) {
+        console.log(`Retry attempt ${retryCount + 1} for loading characters`);
+        setRetryCount(retryCount + 1);
+        
+        // Request both secret character and all characters again
+        socket.emit("request_secret_character", {
+          roomCode,
+          playerId: gameState.playerId,
+        });
+        
+        socket.emit("get_all_characters", {
+          roomCode,
+          playerId: gameState.playerId
+        });
+      }
+    }, 2000); // Retry every 2 seconds
+    
+    return () => clearTimeout(retryTimer);
+  }, [socket, roomCode, gameState.playerId, isLoading, retryCount]);
+
   // Listen for socket events
   useEffect(() => {
     if (!socket) return;
@@ -43,20 +70,24 @@ export default function GameBoard() {
       console.log('Secret character received:', character);
       setSecretCharacter(character);
       
-      // Fetch all characters if we don't have them yet
-      if (gameState.allCharacters.length === 0 && roomCode && gameState.playerId) {
-        console.log('Requesting all characters with room and player info');
-        socket.emit("get_all_characters", {
-          roomCode,
-          playerId: gameState.playerId
-        });
+      // If we now have both secret character and all characters, we're done loading
+      if (characters.length > 0) {
+        console.log('Both secret character and all characters loaded');
+        setIsLoading(false);
       }
     };
 
     // Handle all characters received
     const handleAllCharactersReceived = ({ characters }: { characters: Character[] }) => {
+      console.log('All characters received:', characters.length);
       setAllCharacters(characters);
       setCharacters(characters);
+      
+      // If we now have both secret character and all characters, we're done loading
+      if (gameState.secretCharacter) {
+        console.log('Both secret character and all characters loaded');
+        setIsLoading(false);
+      }
     };
 
     // Handle player disconnection
@@ -83,16 +114,25 @@ export default function GameBoard() {
     socket.on("player_reconnected", handlePlayerReconnected);
     socket.on("room_error", handleError);
 
-    // Request secret character if we don't have it
-    if (!gameState.secretCharacter && roomCode && gameState.playerId) {
-      console.log('Requesting secret character with:', { roomCode, playerId: gameState.playerId });
+    // Always request both secret character and all characters on mount
+    if (roomCode && gameState.playerId) {
+      console.log('Requesting game data with:', { roomCode, playerId: gameState.playerId });
+      
+      // Request secret character
       socket.emit("request_secret_character", {
         roomCode,
         playerId: gameState.playerId,
       });
+      
+      // Also request all characters immediately, don't wait for secret character
+      socket.emit("get_all_characters", {
+        roomCode,
+        playerId: gameState.playerId
+      });
+      
+      console.log('Both requests sent');
     } else {
-      console.log('Current game state:', { 
-        secretCharacter: gameState.secretCharacter,
+      console.log('Missing required data:', { 
         roomCode,
         playerId: gameState.playerId
       });
@@ -199,20 +239,30 @@ export default function GameBoard() {
 
         {/* Character Grid */}
         <div className="rounded-lg bg-gray-900 p-4 sm:p-6 border border-gray-800">
-          <div className="grid grid-cols-4 gap-2 xs:gap-3 sm:grid-cols-4 md:grid-cols-5">
-            {characters.map((character) => (
-              <div 
-                key={character.id} 
-                className={`relative rounded-lg overflow-hidden border-2 ${gameState.eliminatedCharacterIds.includes(character.id) ? 'border-gray-700 opacity-60' : 'border-blue-500'}`}
-              >
-                <CharacterCard
-                  character={character}
-                  isEliminated={gameState.eliminatedCharacterIds.includes(character.id)}
-                  onClick={() => handleCharacterClick(character.id)}
-                />
-              </div>
-            ))}
-          </div>
+          {isLoading || characters.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="mb-4 animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              <p className="text-gray-400">Loading characters...</p>
+              {retryCount > 0 && (
+                <p className="mt-2 text-xs text-gray-500">Retry attempt {retryCount}/5</p>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 gap-2 xs:gap-3 sm:grid-cols-4 md:grid-cols-5">
+              {characters.map((character) => (
+                <div 
+                  key={character.id} 
+                  className={`relative rounded-lg overflow-hidden border-2 ${gameState.eliminatedCharacterIds.includes(character.id) ? 'border-gray-700 opacity-60' : 'border-blue-500'}`}
+                >
+                  <CharacterCard
+                    character={character}
+                    isEliminated={gameState.eliminatedCharacterIds.includes(character.id)}
+                    onClick={() => handleCharacterClick(character.id)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
