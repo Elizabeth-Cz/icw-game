@@ -236,7 +236,7 @@ export default function GameBoard() {
           </h2>
           {gameState.secretCharacter ? (
             <div className="flex justify-center">
-              <div className="w-32 sm:w-40 border-4 border-blue-600 rounded-lg overflow-hidden">
+              <div className="w-32 sm:w-40 border-4 rounded-lg overflow-hidden">
                 <CharacterCard
                   character={gameState.secretCharacter}
                   isEliminated={false}
@@ -268,7 +268,7 @@ export default function GameBoard() {
         <div className="rounded-lg bg-gray-900 p-4 sm:p-6 border border-gray-800">
           {isLoading || characters.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="mb-4 animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              <div className="mb-4 animate-spin rounded-full h-12 w-12 border-t-2"></div>
               <p className="text-gray-400">Loading characters...</p>
               {retryCount > 0 && (
                 <p className="mt-2 text-xs text-gray-500">Retry attempt {retryCount}/5</p>
@@ -279,7 +279,7 @@ export default function GameBoard() {
               {characters.map((character) => (
                 <div 
                   key={character.id} 
-                  className={`relative rounded-lg overflow-hidden border-2 ${gameState.eliminatedCharacterIds.includes(character.id) ? 'border-gray-700 opacity-60' : 'border-blue-500'}`}
+                  className={`relative rounded-lg overflow-hidden border-2`}
                 >
                   <CharacterCard
                     character={character}
