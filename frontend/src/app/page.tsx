@@ -121,7 +121,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rotationOffset, setRotationOffset] = useState(0); // Track the current rotation position
-  const [isAnimationEnabled, setIsAnimationEnabled] = useState(true); // Toggle for animation
+  const [isAnimationEnabled, setIsAnimationEnabled] = useState(false); // Toggle for animation
   const [isMouseDown, setIsMouseDown] = useState(false); // Track if mouse is being held down
   // Initialize with static colors first to avoid hydration mismatch
   const [frameColors, setFrameColors] = useState<string[]>(() => {
