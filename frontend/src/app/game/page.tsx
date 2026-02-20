@@ -18,7 +18,9 @@ export default function GameBoard() {
     toggleCharacterElimination,
     setGameStatus,
     setOpponentConnected,
-    resetEliminations
+    resetEliminations,
+    setRoomCode,
+    setPlayerId
   } = useGame();
   
   const [error, setError] = useState<string | null>(null);
@@ -35,9 +37,34 @@ export default function GameBoard() {
     }
   }, [roomCode, router]);
 
+  // Ensure we have room code and player ID from localStorage if not in game state
+  useEffect(() => {
+    if (!roomCode && localStorage.getItem("roomCode")) {
+      const storedRoomCode = localStorage.getItem("roomCode");
+      console.log('Retrieved room code from localStorage:', storedRoomCode);
+      setRoomCode(storedRoomCode!);
+    }
+    
+    if (!gameState.playerId && localStorage.getItem("playerId")) {
+      const storedPlayerId = localStorage.getItem("playerId");
+      console.log('Retrieved player ID from localStorage:', storedPlayerId);
+      setPlayerId(storedPlayerId!);
+    }
+  }, [roomCode, gameState.playerId, setRoomCode, setPlayerId]);
+  
   // Retry mechanism for loading characters
   useEffect(() => {
     if (!socket || !roomCode || !gameState.playerId) return;
+    
+    // Log current state for debugging
+    console.log('Retry mechanism active with state:', {
+      roomCode,
+      playerId: gameState.playerId,
+      isLoading,
+      retryCount,
+      hasCharacters: characters.length > 0,
+      hasSecretCharacter: !!gameState.secretCharacter
+    });
     
     // Set up retry timer if we don't have characters yet
     const retryTimer = setTimeout(() => {
@@ -59,7 +86,7 @@ export default function GameBoard() {
     }, 2000); // Retry every 2 seconds
     
     return () => clearTimeout(retryTimer);
-  }, [socket, roomCode, gameState.playerId, isLoading, retryCount]);
+  }, [socket, roomCode, gameState.playerId, isLoading, retryCount, characters.length, gameState.secretCharacter]);
 
   // Listen for socket events
   useEffect(() => {

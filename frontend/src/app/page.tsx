@@ -352,7 +352,12 @@ export default function Home() {
 
     setIsLoading(true);
     setError(null);
-    socket.emit("create_room");
+    
+    // Add a small delay to ensure socket is fully connected
+    setTimeout(() => {
+      console.log('Emitting create_room event with socket ID:', socket.id);
+      socket.emit("create_room");
+    }, 100);
   };
 
   // Handle join game button click

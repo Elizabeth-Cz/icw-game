@@ -22,13 +22,19 @@ export default function JoinGame() {
     // Handle room join response
     const handleRoomJoined = ({ roomCode, playerId, reconnectToken }: any) => {
       console.log('Room joined:', { roomCode, playerId });
-
-      // Store the data
+      
+      // Store the data in context
       setRoomCode(roomCode);
       setPlayerId(playerId);
       setReconnectToken(reconnectToken);
+      
+      // Store the data in localStorage for persistence
+      localStorage.setItem("roomCode", roomCode);
+      localStorage.setItem("playerId", playerId);
+      localStorage.setItem("reconnectToken", reconnectToken);
+      
       setIsLoading(false);
-
+      
       // Submit name immediately
       setPlayerName(name);
       socket.emit("submit_name", {
@@ -36,9 +42,9 @@ export default function JoinGame() {
         playerId,
         name,
       });
-
-      // Navigate to game
-      router.push(`/game?roomCode=${roomCode}`);
+      
+      // Navigate to character assignment page
+      router.push(`/character-assignment?roomCode=${roomCode}`);
     };
 
     // Handle errors
@@ -81,9 +87,19 @@ export default function JoinGame() {
 
     setIsLoading(true);
     setError(null);
+    
+    // Clear any existing game state to prevent conflicts
+    localStorage.removeItem("reconnectToken");
+    localStorage.removeItem("roomCode");
+    localStorage.removeItem("playerId");
 
-    // Join room with room code
-    socket.emit("join_room", { roomCode: roomCodeInput });
+    console.log('Attempting to join room:', roomCodeInput);
+    
+    // Add a small delay to ensure socket is fully connected
+    setTimeout(() => {
+      // Join room with room code
+      socket.emit("join_room", { roomCode: roomCodeInput });
+    }, 100);
   };
 
   // Handle back button

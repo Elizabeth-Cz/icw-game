@@ -8,6 +8,7 @@ export interface Character {
   id: string;
   name: string;
   avatarUrl: string;
+  imageUrl?: string;
 }
 
 // Game state interface
