@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSocket } from "../../context/SocketContext";
 import { useGame, Character } from "../../context/GameContext";
 import CharacterCard from "../../components/CharacterCard";
-import PlayAgainModal from "../../components/PlayAgainModal";
 
 export default function GameBoard() {
   const router = useRouter();
@@ -24,7 +23,7 @@ export default function GameBoard() {
   
   const [error, setError] = useState<string | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
-  const [isPlayAgainModalOpen, setIsPlayAgainModalOpen] = useState<boolean>(false);
+  // const [isPlayAgainModalOpen, setIsPlayAgainModalOpen] = useState<boolean>(false);
 
   // Characters are now loaded from the backend
 
@@ -115,55 +114,6 @@ export default function GameBoard() {
     toggleCharacterElimination(characterId);
   };
 
-  // Handle play again button click - opens the modal
-  const handlePlayAgain = () => {
-    if (!socket || !roomCode || !gameState.playerId) {
-      setError("Connection error. Please try again.");
-      return;
-    }
-    
-    // Open the modal instead of immediately restarting
-    setIsPlayAgainModalOpen(true);
-  };
-  
-  // Handle rematch option (same room, new characters)
-  const handleRematch = () => {
-    if (!socket || !roomCode || !gameState.playerId) {
-      setError("Connection error. Please try again.");
-      return;
-    }
-
-    socket.emit("play_again", {
-      roomCode,
-      playerId: gameState.playerId,
-    });
-    
-    resetEliminations();
-    setIsPlayAgainModalOpen(false);
-  };
-  
-  // Handle new game option
-  const handleNewGame = () => {
-    // Clear all game state from localStorage
-    localStorage.removeItem("reconnectToken");
-    localStorage.removeItem("roomCode");
-    localStorage.removeItem("playerId");
-    
-    // Redirect to home page
-    router.push("/");
-  };
-  
-  // Handle join game option
-  const handleJoinGame = () => {
-    // Clear all game state from localStorage
-    localStorage.removeItem("reconnectToken");
-    localStorage.removeItem("roomCode");
-    localStorage.removeItem("playerId");
-    
-    // Redirect to join game page
-    router.push("/join-game");
-  };
-
   // Handle back to main menu
   const handleBackToMainMenu = () => {
     if (socket && roomCode && gameState.playerId) {
@@ -177,15 +127,6 @@ export default function GameBoard() {
 
   return (
     <div className="min-h-screen bg-gray-900 p-2 sm:p-4">
-      {/* Play Again Modal */}
-      <PlayAgainModal
-        isOpen={isPlayAgainModalOpen}
-        onClose={() => setIsPlayAgainModalOpen(false)}
-        onRematch={handleRematch}
-        onNewGame={handleNewGame}
-        onJoinGame={handleJoinGame}
-      />
-      
       <div className="mx-auto max-w-6xl">
         {/* Top Bar */}
         <div className="mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-2">
@@ -214,10 +155,10 @@ export default function GameBoard() {
           </div>
 
           <button
-            onClick={handlePlayAgain}
+            onClick={handleBackToMainMenu}
             className="rounded-lg border-2 border-red-500 bg-[#1C1817] px-3 py-1 sm:px-4 sm:py-2 text-sm sm:text-base font-bold text-red-500 hover:bg-red-900 transition"
           >
-            Play Again
+            Home
           </button>
         </div>
 
