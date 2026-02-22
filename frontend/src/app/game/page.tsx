@@ -223,7 +223,7 @@ export default function GameBoard() {
 
           <button
             onClick={handleBackToMainMenu}
-            className="rounded-lg border-2 border-red-500 bg-[#1C1817] px-3 py-1 sm:px-4 sm:py-2 text-sm sm:text-base font-bold text-red-500 hover:bg-red-900 transition"
+            className="btn btn-sm border-yellow-400 shadow-[2px_2px_#F7D54D] text-yellow-400"
           >
             Home
           </button>
@@ -231,9 +231,6 @@ export default function GameBoard() {
 
         {/* Secret Character Section */}
         <div className="mb-6 sm:mb-8">
-          <h2 className="mb-4 text-center text-base sm:text-lg font-bold text-cream-100">
-            You are:
-          </h2>
           {gameState.secretCharacter ? (
             <div className="flex justify-center">
               <div className="w-32 sm:w-40 border-4 rounded-lg overflow-hidden">

@@ -422,8 +422,7 @@ export default function Home() {
             <button
               onClick={handleCreateGame}
               disabled={isLoading || !connected}
-              className="rounded-xl w-48 border-2 border-[#0390A1] bg-[#1C1817] h-20 font-bold text-xl transition hover:cursor-pointer"
-              style={{ boxShadow: '5px 7px #0390A1' }}
+              className="btn btn-lg border-[#0390A1] shadow-[5px_7px_#0390A1] bg-[#1C1817]"
             >
               {isLoading ? "Creating..." : "New Game"}
             </button>
@@ -431,8 +430,7 @@ export default function Home() {
             <button
               onClick={handleJoinGame}
               disabled={isLoading || !connected}
-              className="rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl transition hover:cursor-pointer"
-              style={{ boxShadow: '5px 7px #D34F34' }}
+              className="btn btn-lg border-[#D34F34] shadow-[5px_7px_#D34F34] bg-[#1C1817]"
             >
               Join Game
             </button>
@@ -441,12 +439,6 @@ export default function Home() {
           {error && (
             <div className="mt-2 rounded-md bg-red-900 border border-red-500 text-center text-xs text-red-300">
               {error}
-            </div>
-          )}
-
-          {!connected && (
-            <div className="mt-2 rounded-md bg-yellow-900 border border-yellow-500 text-center text-xs text-yellow-300">
-              Connecting...
             </div>
           )}
         </div>

@@ -38,6 +38,7 @@ import TarekImage from "../../assets/Tarek.png";
 import TissamImage from "../../assets/Tissam.png";
 import TonnyImage from "../../assets/Tonny.png";
 import WalaImage from "../../assets/Wala.png";
+import CharacterCard from "@/components/CharacterCard";
 
 // Create a map of character names to their images
 const characterImages: Record<string, any> = {
@@ -80,7 +81,7 @@ export default function CharacterAssignment() {
   const roomCode = searchParams.get("roomCode");
   const { socket } = useSocket();
   const { gameState, setSecretCharacter } = useGame();
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -135,19 +136,19 @@ export default function CharacterAssignment() {
   // Retry mechanism for loading character
   useEffect(() => {
     if (!socket || !roomCode || !gameState.playerId || !isLoading) return;
-    
+
     const retryTimer = setTimeout(() => {
       if (isLoading && retryCount < 5 && !gameState.secretCharacter) {
         console.log(`Retry attempt ${retryCount + 1} for loading character`);
         setRetryCount(retryCount + 1);
-        
+
         socket.emit("request_secret_character", {
           roomCode,
           playerId: gameState.playerId,
         });
       }
     }, 2000); // Retry every 2 seconds
-    
+
     return () => clearTimeout(retryTimer);
   }, [socket, roomCode, gameState.playerId, gameState.secretCharacter, isLoading, retryCount]);
 
@@ -181,7 +182,7 @@ export default function CharacterAssignment() {
         </svg>
         Back
       </button>
-      <main className="h-full flex flex-col items-center p-8 gap-6">
+      <main className="h-full flex flex-col items-center p-8 justify-between">
         <div className="bg-gray-800 rounded-lg py-2 px-6 inline-block w-64">
           <h1 className="text-4xl font-bold text-[#EAC006]" style={{ fontFamily: 'var(--font-jersey-10)' }}>• Your Character •</h1>
         </div>
@@ -190,7 +191,7 @@ export default function CharacterAssignment() {
           <p className="text-lg text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-25)' }}>
             This is your secret character. Your opponent will try to guess who it is!
           </p>
-          
+
           {isLoading ? (
             <div className="flex flex-col items-center justify-center">
               <div className="mb-4 animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#0390A1]"></div>
@@ -200,21 +201,10 @@ export default function CharacterAssignment() {
               )}
             </div>
           ) : gameState.secretCharacter ? (
-            <div className="flex flex-col items-center">
-              <div className="w-64 h-64 border-4 border-[#0390A1] rounded-lg overflow-hidden mb-4" style={{ boxShadow: '5px 7px #0390A1' }}>
-                {gameState.secretCharacter.name && characterImages[gameState.secretCharacter.name] && (
-                  <Image 
-                    src={characterImages[gameState.secretCharacter.name]} 
-                    alt={gameState.secretCharacter.name} 
-                    width={256} 
-                    height={256} 
-                    className="object-cover w-full h-full"
-                  />
-                )}
-              </div>
-              <h2 className="text-2xl font-bold text-[#EAC006]" style={{ fontFamily: 'var(--font-jersey-10)' }}>
-                {gameState.secretCharacter.name}
-              </h2>
+            <div className="w-72 flex justify-center items-center">
+              {gameState.secretCharacter.name && characterImages[gameState.secretCharacter.name] && (
+                <CharacterCard character={gameState.secretCharacter} isEliminated={false} />
+              )}
             </div>
           ) : (
             <div className="text-red-500">

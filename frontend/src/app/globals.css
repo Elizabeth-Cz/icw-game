@@ -3,6 +3,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --red-primary: #D34F34;
+  --teal-primary: #0390A1;
+  --yellow-primary: #F7D54D;
 }
 
 @theme inline {
@@ -23,6 +26,18 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.btn {
+  @apply rounded-xl border-2 font-bold
+}
+
+.btn-lg {
+  @apply rounded-xl w-48 border-2 h-20 font-bold text-xl
+}
+
+.btn-sm {
+  @apply rounded-md border-2 font-bold text-sm px-2 py-1
 }
 
 .flip-horizontal-bottom {
