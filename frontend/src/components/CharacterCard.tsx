@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Character } from '../context/GameContext';
 // Import all character images dynamically
@@ -33,6 +33,7 @@ import TarekImage from '../assets/Tarek.png';
 import TissamImage from '../assets/Tissam.png';
 import TonnyImage from '../assets/Tonny.png';
 import WalaImage from '../assets/Wala.png';
+import QuestionMarkImage from '../assets/question-mark.png';
 
 interface CharacterCardProps {
   character: Character;
@@ -82,29 +83,49 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
   isSecret = false,
   onClick,
 }) => {
+  // Track previous elimination state to apply animation only when it changes
+  const [wasEliminated, setWasEliminated] = useState(isEliminated);
+  const [shouldAnimate, setShouldAnimate] = useState(false);
+
   // Get image source from our imported images map
   const getImageSrc = () => {
     return characterImages[character.name];
   };
 
+  // Apply animation when elimination state changes
+  useEffect(() => {
+    // Only trigger animation when card is being eliminated (not when un-eliminated)
+    if (isEliminated && !wasEliminated) {
+      setShouldAnimate(true);
+
+      // Reset animation after it completes so it can be triggered again if needed
+      const timer = setTimeout(() => {
+        setShouldAnimate(false);
+      }, 400); // Match this with the animation duration in CSS
+
+      return () => clearTimeout(timer);
+    }
+    setWasEliminated(isEliminated);
+  }, [isEliminated, wasEliminated]);
+
   return (
-    <div className='border-3 border-[#D8C8AE] rounded-xl bg-white'>
+    <div className={`border-3 border-[#D8C8AE] rounded-2xl bg-white`}>
       <div
-        className={`flex flex-col items-center sm:p-2 border-3 border-[#27528F] rounded-xl overflow-hidden`}
+        className={`flex flex-col items-center border-3 border-[#27528F] rounded-xl`}
         onClick={onClick}
       >
-        <div className=" relative h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 bg-white m-2">
+        <div className="relative h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 bg-white m-2">
           <Image
             unoptimized={true}
-            src={getImageSrc()}
+            src={isEliminated ? QuestionMarkImage : getImageSrc()}
             alt={character.name}
-            className={`object-cover ${isEliminated ? 'grayscale' : ''}`}
+            className={`object-cover h-full w-full ${isEliminated? 'mt-3' : ''}`}
             fill
             sizes="(max-width: 480px) 48px, (max-width: 768px) 64px, 80px"
           />
         </div>
-        <div className={`text-center w-full py-1 ${isEliminated ? 'bg-[#D8C8AE]' : 'bg-[#27528F]'}`}>
-          <p className={`text-xs sm:text-xs md:text-sm font-bold truncate ${isEliminated ? 'text-gray-400' : 'text-white'}`}>
+        <div className={`text-center w-full py-1 bg-[#27528F] ${isEliminated ? 'invisible' : ''}`}>
+          <p className={`text-xs sm:text-xs md:text-sm font-bold truncate`}>
             {character.name}
           </p>
         </div>
