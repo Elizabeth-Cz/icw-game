@@ -33,6 +33,7 @@ import TarekImage from '../assets/Tarek.png';
 import TissamImage from '../assets/Tissam.png';
 import TonnyImage from '../assets/Tonny.png';
 import WalaImage from '../assets/Wala.png';
+import KennyImage from '../assets/Kenny.png';
 import QuestionMarkImage from '../assets/question-mark.png';
 
 interface CharacterCardProps {
@@ -74,7 +75,8 @@ const characterImages: Record<string, any> = {
   'Tarek': TarekImage,
   'Tissam': TissamImage,
   'Tonny': TonnyImage,
-  'Wala': WalaImage
+  'Wala': WalaImage,
+  'Kenny': KennyImage
 };
 
 const CharacterCard: React.FC<CharacterCardProps> = ({
@@ -92,40 +94,24 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
     return characterImages[character.name];
   };
 
-  // Apply animation when elimination state changes
-  useEffect(() => {
-    // Only trigger animation when card is being eliminated (not when un-eliminated)
-    if (isEliminated && !wasEliminated) {
-      setShouldAnimate(true);
-
-      // Reset animation after it completes so it can be triggered again if needed
-      const timer = setTimeout(() => {
-        setShouldAnimate(false);
-      }, 400); // Match this with the animation duration in CSS
-
-      return () => clearTimeout(timer);
-    }
-    setWasEliminated(isEliminated);
-  }, [isEliminated, wasEliminated]);
-
   return (
-    <div className={`border-3 border-[#D8C8AE] rounded-2xl bg-white`}>
+    <div className={`border-3 xs:border-3 border-[#D8C8AE] rounded-xl xs:rounded-2xl bg-white w-full max-w-[180px] ${shouldAnimate ? 'flip-horizontal-bottom' : ''}`}>
       <div
-        className={`flex flex-col items-center border-3 border-[#27528F] rounded-xl`}
+        className={`border-3 xs:border-3 border-[#27528F] rounded-lg xs:rounded-xl overflow-hidden`}
         onClick={onClick}
       >
-        <div className="relative h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 bg-white m-2">
+        <div className={`relative w-full aspect-square ${isEliminated ? 'top-3' : ''}`}>
           <Image
             unoptimized={true}
             src={isEliminated ? QuestionMarkImage : getImageSrc()}
             alt={character.name}
-            className={`object-cover h-full w-full ${isEliminated? 'mt-3' : ''}`}
+            className={`object-cover h-full w-full ${isEliminated ? 'p-3 xs:p-4 md:p-5 mt-auto' : ''}`}
             fill
-            sizes="(max-width: 480px) 48px, (max-width: 768px) 64px, 80px"
+            sizes="(max-width: 480px) 100px, (max-width: 768px) 140px, 180px"
           />
         </div>
-        <div className={`text-center w-full py-1 bg-[#27528F] ${isEliminated ? 'invisible' : ''}`}>
-          <p className={`text-xs sm:text-xs md:text-sm font-bold truncate`}>
+        <div className={`text-center w-full bg-[#27528F] py-1 xs:py-1.5 md:py-2 ${isEliminated ? 'invisible' : ''}`}>
+          <p className="text-xs xs:text-sm md:text-base truncate px-1" style={{ fontFamily: 'var(--font-jersey-25)', color: 'white' }}>
             {character.name}
           </p>
         </div>
