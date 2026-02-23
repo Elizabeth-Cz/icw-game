@@ -187,7 +187,7 @@ export default function CharacterAssignment() {
           <h1 className="text-4xl font-bold text-[#EAC006]" style={{ fontFamily: 'var(--font-jersey-10)' }}>• Your Character •</h1>
         </div>
 
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-6"> 
           <p className="text-lg text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-25)' }}>
             This is your secret character. Your opponent will try to guess who it is!
           </p>
@@ -195,10 +195,7 @@ export default function CharacterAssignment() {
           {isLoading ? (
             <div className="flex flex-col items-center justify-center">
               <div className="mb-4 animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#0390A1]"></div>
-              <p className="text-[#D8C8AE]">Loading your character...</p>
-              {retryCount > 0 && (
-                <p className="mt-2 text-xs text-gray-500">Retry attempt {retryCount}/5</p>
-              )}
+              <p className="text-[#D8C8AE]">Waiting for your opponent to join...</p>
             </div>
           ) : gameState.secretCharacter ? (
             <div className="w-72 flex justify-center items-center">

@@ -136,32 +136,42 @@ export const setupSocketHandlers = (io: Server) => {
           // Set room status to active
           roomService.setRoomStatus(roomCode, 'active');
           
-          // Select 20 random characters for this game room
-          const gameCharacters = characterService.selectGameCharacters(roomCode);
-          
-          // Get two random characters from the game characters for secret assignment
-          const secretCharacters = [...gameCharacters].sort(() => 0.5 - Math.random()).slice(0, 2);
-          
           // Get room
           const room = roomService.getRoom(roomCode);
           if (!room) return;
           
-          // Assign secret characters to players
-          room.players.forEach((player: Player, index: number) => {
-            const secretCharacter = secretCharacters[index];
-            roomService.assignSecretCharacter(roomCode, player.playerId, secretCharacter.id);
+          // Select 20 random characters for this game room if not already selected
+          const gameCharacters = characterService.getGameCharacters(roomCode);
+          
+          // Track which players need character assignment
+          const playersNeedingCharacters = room.players.filter(player => !player.secretCharacterId);
+          
+          if (playersNeedingCharacters.length > 0) {
+            // Get random characters from the game characters for players who need them
+            const availableCharacters = [...gameCharacters];
+            const secretCharacters = availableCharacters.sort(() => 0.5 - Math.random()).slice(0, playersNeedingCharacters.length);
             
-            // Send secret character to each player
-            io.to(player.socketId).emit(SocketEvents.SECRET_CHARACTER_ASSIGNED, {
-              character: secretCharacter,
+            // Assign secret characters only to players who don't have one
+            playersNeedingCharacters.forEach((player: Player, index: number) => {
+              const secretCharacter = secretCharacters[index];
+              roomService.assignSecretCharacter(roomCode, player.playerId, secretCharacter.id);
+              
+              // Send secret character to the player
+              io.to(player.socketId).emit(SocketEvents.SECRET_CHARACTER_ASSIGNED, {
+                character: secretCharacter,
+              });
+              
+              console.log(`Assigned character ${secretCharacter.name} to player ${player.playerId}`);
             });
-          });
+          }
           
           // Get game character IDs for shuffling
           const characterIds = gameCharacters.map(char => char.id);
           
-          // Create shuffled orders for both players
-          roomService.assignShuffledCharacterOrders(roomCode, characterIds);
+          // Create shuffled orders for players who don't have them yet
+          if (!room.players[0].characterOrder || !room.players[1].characterOrder) {
+            roomService.assignShuffledCharacterOrders(roomCode, characterIds);
+          }
         }
       } catch (error) {
         console.error('Error submitting name:', error);
@@ -264,18 +274,22 @@ export const setupSocketHandlers = (io: Server) => {
         // Get two random characters from the game characters for secret assignments
         const secretCharacters = [...gameCharacters].sort(() => 0.5 - Math.random()).slice(0, 2);
         
-        // Assign new characters to players
+        // Reset character orders for both players to force new shuffling
+        room.players.forEach((player: Player) => {
+          player.characterOrder = undefined;
+        });
+        
+        // Assign new characters to players and send them
         room.players.forEach((player: Player, index: number) => {
           const secretCharacter = secretCharacters[index];
           roomService.assignSecretCharacter(roomCode, player.playerId, secretCharacter.id);
-          
-          // Reset character order to force new shuffling
-          player.characterOrder = undefined;
           
           // Send new secret character to each player
           io.to(player.socketId).emit(SocketEvents.SECRET_CHARACTER_ASSIGNED, {
             character: secretCharacter,
           });
+          
+          console.log(`Play Again: Assigned character ${secretCharacter.name} to player ${player.playerId}`);
         });
         
         // Get game character IDs for shuffling
