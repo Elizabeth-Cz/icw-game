@@ -24,12 +24,46 @@ export enum SocketEvents {
   PLAYER_DISCONNECTED = 'player_disconnected',
   REQUEST_RECONNECT = 'request_reconnect',
   RECONNECT_SUCCESS = 'reconnect_success',
-  PLAY_AGAIN = 'play_again',
   LEAVE_ROOM = 'leave_room',
   GET_ALL_CHARACTERS = 'get_all_characters',
   ALL_CHARACTERS = 'all_characters',
   REQUEST_SECRET_CHARACTER = 'request_secret_character',
   CHARACTER_ORDER = 'character_order',
+}
+
+// Helper functions
+function handleError(socket: Socket, message: string, error?: any) {
+  if (error) console.error(`${message}:`, error);
+  socket.emit(SocketEvents.ROOM_ERROR, { message });
+}
+
+function assignCharactersToPlayers(io: Server, roomCode: string, playersNeedingCharacters: Player[], gameCharacters: Character[]) {
+  if (playersNeedingCharacters.length === 0) return;
+  
+  const availableCharacters = [...gameCharacters];
+  const secretCharacters = availableCharacters
+    .sort(() => 0.5 - Math.random())
+    .slice(0, playersNeedingCharacters.length);
+  
+  playersNeedingCharacters.forEach((player: Player, index: number) => {
+    const secretCharacter = secretCharacters[index];
+    roomService.assignSecretCharacter(roomCode, player.playerId, secretCharacter.id);
+    
+    io.to(player.socketId).emit(SocketEvents.SECRET_CHARACTER_ASSIGNED, {
+      character: secretCharacter,
+    });
+  });
+}
+
+function getOrderedCharacters(gameCharacters: Character[], characterOrder: string[]) {
+  const characterMap = gameCharacters.reduce((map, char) => {
+    map[char.id] = char;
+    return map;
+  }, {} as Record<string, Character>);
+  
+  return characterOrder
+    .map(id => characterMap[id])
+    .filter(char => char !== undefined);
 }
 
 export const setupSocketHandlers = (io: Server) => {
@@ -71,10 +105,7 @@ export const setupSocketHandlers = (io: Server) => {
           reconnectToken,
         });
       } catch (error) {
-        console.error('Error creating room:', error);
-        socket.emit(SocketEvents.ROOM_ERROR, {
-          message: 'Failed to create room',
-        });
+        handleError(socket, 'Failed to create room', error);
       }
     });
 
@@ -83,16 +114,12 @@ export const setupSocketHandlers = (io: Server) => {
       try {
         // Check if room exists
         if (!roomService.roomExists(roomCode)) {
-          return socket.emit(SocketEvents.ROOM_ERROR, {
-            message: 'Room does not exist',
-          });
+          return handleError(socket, 'Room does not exist');
         }
 
         // Check if room is full
         if (roomService.isRoomFull(roomCode)) {
-          return socket.emit(SocketEvents.ROOM_ERROR, {
-            message: 'Room is full',
-          });
+          return handleError(socket, 'Room is full');
         }
 
         const playerId = generateId();
@@ -118,10 +145,7 @@ export const setupSocketHandlers = (io: Server) => {
         // Notify all players in the room that both players have joined
         io.to(roomCode).emit(SocketEvents.BOTH_PLAYERS_JOINED);
       } catch (error) {
-        console.error('Error joining room:', error);
-        socket.emit(SocketEvents.ROOM_ERROR, {
-          message: 'Failed to join room',
-        });
+        handleError(socket, 'Failed to join room', error);
       }
     });
 
@@ -146,24 +170,8 @@ export const setupSocketHandlers = (io: Server) => {
           // Track which players need character assignment
           const playersNeedingCharacters = room.players.filter(player => !player.secretCharacterId);
           
-          if (playersNeedingCharacters.length > 0) {
-            // Get random characters from the game characters for players who need them
-            const availableCharacters = [...gameCharacters];
-            const secretCharacters = availableCharacters.sort(() => 0.5 - Math.random()).slice(0, playersNeedingCharacters.length);
-            
-            // Assign secret characters only to players who don't have one
-            playersNeedingCharacters.forEach((player: Player, index: number) => {
-              const secretCharacter = secretCharacters[index];
-              roomService.assignSecretCharacter(roomCode, player.playerId, secretCharacter.id);
-              
-              // Send secret character to the player
-              io.to(player.socketId).emit(SocketEvents.SECRET_CHARACTER_ASSIGNED, {
-                character: secretCharacter,
-              });
-              
-              console.log(`Assigned character ${secretCharacter.name} to player ${player.playerId}`);
-            });
-          }
+          // Assign characters to players who need them
+          assignCharactersToPlayers(io, roomCode, playersNeedingCharacters, gameCharacters);
           
           // Get game character IDs for shuffling
           const characterIds = gameCharacters.map(char => char.id);
@@ -174,29 +182,19 @@ export const setupSocketHandlers = (io: Server) => {
           }
         }
       } catch (error) {
-        console.error('Error submitting name:', error);
-        socket.emit(SocketEvents.ROOM_ERROR, {
-          message: 'Failed to submit name',
-        });
+        handleError(socket, 'Failed to submit name', error);
       }
     });
 
     // Request reconnection
     socket.on(SocketEvents.REQUEST_RECONNECT, ({ reconnectToken }) => {
       try {
-        console.log(`Reconnection attempt with token: ${reconnectToken.substring(0, 5)}...`);
-        
         // Find room and player by reconnect token
         const { room, player } = roomService.findPlayerByReconnectToken(reconnectToken);
         
         if (!room || !player) {
-          console.log('Invalid reconnect token or room/player not found');
-          return socket.emit(SocketEvents.ROOM_ERROR, {
-            message: 'Invalid reconnect token',
-          });
+          return handleError(socket, 'Invalid reconnect token');
         }
-        
-        console.log(`Found room ${room.roomCode} for reconnection, player ID: ${player.playerId}`);
 
         // Update player's socket ID and mark as connected
         roomService.updatePlayerSocketId(room.roomCode, player.playerId, socket.id);
@@ -208,8 +206,6 @@ export const setupSocketHandlers = (io: Server) => {
         const secretCharacter = player.secretCharacterId 
           ? characterService.getCharacterById(player.secretCharacterId)
           : null;
-          
-        console.log(`Reconnecting player with secret character: ${secretCharacter?.name || 'none'}`);
 
         // Send reconnection success to client
         socket.emit(SocketEvents.RECONNECT_SUCCESS, {
@@ -220,23 +216,10 @@ export const setupSocketHandlers = (io: Server) => {
           roomStatus: room.status,
         });
         
-        // If the player has a character order, request characters to get them in the right order
+        // If the player has a character order, send ordered characters
         if (player.characterOrder && player.characterOrder.length > 0) {
-          console.log(`Player has character order, sending characters`);
-          // Get the game characters for this room
           const gameCharacters = characterService.getGameCharacters(room.roomCode);
-          
-          // Create a map of character ID to character object
-          const characterMap = gameCharacters.reduce((map, char) => {
-            map[char.id] = char;
-            return map;
-          }, {} as Record<string, Character>);
-          
-          // Reorder characters based on player's order
-          const orderedCharacters = player.characterOrder.map(id => characterMap[id])
-            .filter(char => char !== undefined); // Filter out any undefined characters
-          
-          // Send the ordered characters
+          const orderedCharacters = getOrderedCharacters(gameCharacters, player.characterOrder);
           socket.emit(SocketEvents.ALL_CHARACTERS, { characters: orderedCharacters });
         }
 
@@ -246,64 +229,11 @@ export const setupSocketHandlers = (io: Server) => {
         // Update room's last activity timestamp
         room.lastActivity = new Date();
       } catch (error) {
-        console.error('Error reconnecting:', error);
-        socket.emit(SocketEvents.ROOM_ERROR, {
-          message: 'Failed to reconnect',
-        });
+        handleError(socket, 'Failed to reconnect', error);
       }
     });
 
-    // Play again (reset game with new characters)
-    socket.on(SocketEvents.PLAY_AGAIN, ({ roomCode, playerId }) => {
-      try {
-        // Verify player is in the room
-        if (!roomService.isPlayerInRoom(roomCode, playerId)) {
-          return socket.emit(SocketEvents.ROOM_ERROR, {
-            message: 'Player not in room',
-          });
-        }
-
-        // Get room
-        const room = roomService.getRoom(roomCode);
-        if (!room) return;
-        
-        // Clear existing game characters and select 20 new random characters for this room
-        characterService.clearGameCharacters(roomCode);
-        const gameCharacters = characterService.selectGameCharacters(roomCode);
-
-        // Get two random characters from the game characters for secret assignments
-        const secretCharacters = [...gameCharacters].sort(() => 0.5 - Math.random()).slice(0, 2);
-        
-        // Reset character orders for both players to force new shuffling
-        room.players.forEach((player: Player) => {
-          player.characterOrder = undefined;
-        });
-        
-        // Assign new characters to players and send them
-        room.players.forEach((player: Player, index: number) => {
-          const secretCharacter = secretCharacters[index];
-          roomService.assignSecretCharacter(roomCode, player.playerId, secretCharacter.id);
-          
-          // Send new secret character to each player
-          io.to(player.socketId).emit(SocketEvents.SECRET_CHARACTER_ASSIGNED, {
-            character: secretCharacter,
-          });
-          
-          console.log(`Play Again: Assigned character ${secretCharacter.name} to player ${player.playerId}`);
-        });
-        
-        // Get game character IDs for shuffling
-        const characterIds = gameCharacters.map(char => char.id);
-        
-        // Create new shuffled orders for both players
-        roomService.assignShuffledCharacterOrders(roomCode, characterIds);
-      } catch (error) {
-        console.error('Error playing again:', error);
-        socket.emit(SocketEvents.ROOM_ERROR, {
-          message: 'Failed to restart game',
-        });
-      }
-    });
+    // Play Again functionality removed
 
     // Leave room
     socket.on(SocketEvents.LEAVE_ROOM, ({ roomCode, playerId }) => {
@@ -324,6 +254,7 @@ export const setupSocketHandlers = (io: Server) => {
           socket.to(roomCode).emit(SocketEvents.PLAYER_DISCONNECTED);
         }
       } catch (error) {
+        // Just log the error, no need to send to client as they're leaving
         console.error('Error leaving room:', error);
       }
     });
@@ -360,63 +291,32 @@ export const setupSocketHandlers = (io: Server) => {
           }
         }
         
-        // If player has a custom order, reorder the characters
+        // Send ordered characters if player has a custom order, otherwise send default order
         if (player.characterOrder) {
-          // Create a map of character ID to character object
-          const characterMap = gameCharacters.reduce((map, char) => {
-            map[char.id] = char;
-            return map;
-          }, {} as Record<string, Character>);
-          
-          // Reorder characters based on player's order
-          const orderedCharacters = player.characterOrder.map(id => characterMap[id])
-            .filter(char => char !== undefined); // Filter out any undefined characters
-          
-          // Send the ordered characters
+          const orderedCharacters = getOrderedCharacters(gameCharacters, player.characterOrder);
           socket.emit(SocketEvents.ALL_CHARACTERS, { characters: orderedCharacters });
         } else {
-          // Send characters in default order if no custom order
           socket.emit(SocketEvents.ALL_CHARACTERS, { characters: gameCharacters });
         }
       } catch (error) {
-        console.error('Error getting all characters:', error);
-        socket.emit(SocketEvents.ROOM_ERROR, {
-          message: 'Failed to get characters',
-        });
+        handleError(socket, 'Failed to get characters', error);
       }
     });
     
     // Request secret character (for reconnection)
     socket.on(SocketEvents.REQUEST_SECRET_CHARACTER, ({ roomCode, playerId }) => {
-      console.log('Received request for secret character:', { roomCode, playerId });
       try {
         // Verify player is in the room
         if (!roomService.isPlayerInRoom(roomCode, playerId)) {
-          console.log('Player not in room:', { roomCode, playerId });
-          return socket.emit(SocketEvents.ROOM_ERROR, {
-            message: 'Player not in room',
-          });
+          return handleError(socket, 'Player not in room');
         }
         
         // Get player's secret character
         const room = roomService.getRoom(roomCode);
-        if (!room) {
-          console.log('Room not found:', roomCode);
-          return;
-        }
-        
-        console.log('Room found:', { roomCode, players: room.players.map(p => ({ id: p.playerId, hasSecret: !!p.secretCharacterId })) });
+        if (!room) return;
         
         const player = room.players.find(p => p.playerId === playerId);
-        if (!player) {
-          console.log('Player not found in room:', { roomCode, playerId });
-          return;
-        }
-        
-        if (!player.secretCharacterId) {
-          console.log('Player has no secret character assigned:', { roomCode, playerId });
-          return;
-        }
+        if (!player || !player.secretCharacterId) return;
         
         // Make sure we have game characters for this room
         const gameCharacters = characterService.getGameCharacters(roomCode);
@@ -424,28 +324,19 @@ export const setupSocketHandlers = (io: Server) => {
         // First try to find the secret character in the game characters
         let secretCharacter = gameCharacters.find(char => char.id === player.secretCharacterId);
         
-        // If not found in game characters (which could happen if the character service was restarted),
-        // fall back to all characters
+        // If not found in game characters, fall back to all characters
         if (!secretCharacter) {
           secretCharacter = characterService.getCharacterById(player.secretCharacterId);
         }
         
-        if (!secretCharacter) {
-          console.log('Secret character not found:', { characterId: player.secretCharacterId });
-          return;
-        }
-        
-        console.log('Sending secret character to player:', { playerId, characterId: secretCharacter.id });
+        if (!secretCharacter) return;
         
         // Send secret character to player
         socket.emit(SocketEvents.SECRET_CHARACTER_ASSIGNED, {
           character: secretCharacter,
         });
       } catch (error) {
-        console.error('Error requesting secret character:', error);
-        socket.emit(SocketEvents.ROOM_ERROR, {
-          message: 'Failed to get secret character',
-        });
+        handleError(socket, 'Failed to get secret character', error);
       }
     });
 
