@@ -2,87 +2,15 @@
 
 import React, { useState, useEffect, useId } from 'react';
 import { useRouter } from "next/navigation";
-import Image, { StaticImageData } from "next/image";
+import Image from "next/image";
 import { useSocket } from "../context/SocketContext";
 import { useGame } from "../context/GameContext";
-
-
-
-// Import all character images dynamically
-import AlexImage from "../assets/Alex.png";
-import AnnaImage from "../assets/Anna.png";
-import BrianImage from "../assets/Brian.png";
-import DavidImage from "../assets/David.png";
-import DiogoImage from "../assets/Diogo.png";
-import DriesImage from "../assets/Dries.png";
-import ElouanImage from "../assets/Elouan.png";
-import FrankImage from "../assets/Frank.png";
-import GiriImage from "../assets/Giri.png";
-import HiteshImage from "../assets/Hitesh.png";
-import IvanImage from "../assets/Ivan.png";
-import IvanaImage from "../assets/Ivana.png";
-import JeeshanImage from "../assets/Jeeshan.png";
-import JesseImage from "../assets/Jesse.png";
-import JosImage from "../assets/Jos.png";
-import KarlImage from "../assets/Karl.png";
-import KevinImage from "../assets/Kevin.png";
-import LinhImage from "../assets/Linh.png";
-import LizImage from "../assets/Liz.png";
-import LouiseImage from "../assets/Louise.png";
-import LucImage from "../assets/Luc.png";
-import MariaImage from "../assets/Maria.png";
-import MichielImage from "../assets/Michiel.png";
-import MikeImage from "../assets/Mike.png";
-import NickImage from "../assets/Nick.png";
-import RalphImage from "../assets/Ralph.png";
-import SidImage from "../assets/Sid.png";
-import TarekImage from "../assets/Tarek.png";
-import TissamImage from "../assets/Tissam.png";
-import TonnyImage from "../assets/Tonny.png";
-import WalaImage from "../assets/Wala.png";
+import { getCharacterImagesArray, teamBgClass, TeamType } from "../data/characterData";
 import QuestionMarkImage from "../assets/question-mark.png";
 import Logo from '@/components/Logo';
 
-// Create an array of all character images for easier looping
-type CharacterImage = {
-  src: StaticImageData;
-  alt: string;
-  team: TeamType;
-};
-
-const characterImages: CharacterImage[] = [
-  { src: AlexImage, alt: "Alex", team: 'rocket'},
-  { src: AnnaImage, alt: "Anna" ,team: 'management'},
-  { src: BrianImage, alt: "Brian" ,team: 'management'},
-  { src: DavidImage, alt: "David" ,team: 'amigo'},
-  { src: DiogoImage, alt: "Diogo" ,team: 'rocket'},
-  { src: DriesImage, alt: "Dries" ,team: 'management'},
-  { src: ElouanImage, alt: "Elouan" ,team: 'one'},
-  { src: FrankImage, alt: "Frank" ,team: 'one'},
-  { src: GiriImage, alt: "Giri" ,team: 'one'},
-  { src: HiteshImage, alt: "Hitesh" ,team: 'rocket'},
-  { src: IvanImage, alt: "Ivan" ,team: 'rocket'},
-  { src: IvanaImage, alt: "Ivana" ,team: 'product'},
-  { src: JeeshanImage, alt: "Jeeshan" ,team: 'amigo'},
-  { src: JesseImage, alt: "Jesse" ,team: 'one'},
-  { src: JosImage, alt: "Jos" ,team: 'product'},
-  { src: KarlImage, alt: "Karl" ,team: 'one'},
-  { src: KevinImage, alt: "Kevin" ,team: 'rocket'},
-  { src: LinhImage, alt: "Linh" ,team: 'rocket'},
-  { src: LizImage, alt: "Liz" ,team: 'rocket'},
-  { src: LouiseImage, alt: "Louise" ,team: 'product'},
-  { src: LucImage, alt: "Luc" ,team: 'product'},
-  { src: MariaImage, alt: "Maria" ,team: 'product'},
-  { src: MichielImage, alt: "Michiel" ,team: 'management'},
-  { src: MikeImage, alt: "Mike" ,team: 'product'},
-  { src: NickImage, alt: "Nick" ,team: 'amigo'},
-  { src: RalphImage, alt: "Ralph" ,team: 'one'},
-  { src: SidImage, alt: "Sid" ,team: 'one'},
-  { src: TarekImage, alt: "Tarek" ,team: 'amigo'},
-  { src: TissamImage, alt: "Tissam" ,team: 'product'},
-  { src: TonnyImage, alt: "Tonny" ,team: 'amigo'},
-  { src: WalaImage, alt: "Wala" ,team: 'one'},
-];
+// Get character images array from shared data
+const characterImages = getCharacterImagesArray();
 
 // Define background colors for the border, grouped by color family
 const colorFamilies = [
@@ -99,16 +27,6 @@ const colorFamilies = [
   // Teals/Cyans
   ["#0390A1", "#0AACBF", "#007D8C"]
 ];
-
-type TeamType = 'rocket' | 'management' | 'one' | 'product' | 'amigo';
-
-const teamBgClass: Record<TeamType, string> = {
-  rocket: "bg-[#237658]",
-  management: "bg-[#D0B334]",
-  one: "bg-[#D34F34]",
-  product: "bg-[#27528F]",
-  amigo: "bg-[#0390A1]"
-}
 
 // Flatten array for backward compatibility
 const bgColors = colorFamilies.flat();
