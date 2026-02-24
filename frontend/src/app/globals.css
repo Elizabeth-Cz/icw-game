@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
@@ -6,6 +9,15 @@
   --red-primary: #D34F34;
   --teal-primary: #0390A1;
   --yellow-primary: #F7D54D;
+}
+
+@layer base {
+  .font-outline-2 {
+    -webkit-text-stroke: 1px black;
+  }
+  .font-outline-4 {
+    -webkit-text-stroke: 4px black;
+  }
 }
 
 @theme inline {

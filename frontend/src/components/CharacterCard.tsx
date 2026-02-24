@@ -35,6 +35,7 @@ import TonnyImage from '../assets/Tonny.png';
 import WalaImage from '../assets/Wala.png';
 import KennyImage from '../assets/Kenny.png';
 import QuestionMarkImage from '../assets/question-mark.png';
+import Logo from './Logo';
 
 interface CharacterCardProps {
   character: Character;
@@ -95,20 +96,24 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
   };
 
   return (
-    <div className={`border-3 xs:border-3 border-[#D8C8AE] rounded-xl xs:rounded-2xl bg-white w-full max-w-[180px] ${shouldAnimate ? 'flip-horizontal-bottom' : ''}`}>
+    <div className={`border-3 xs:border-3 border-[#D8C8AE] rounded-xl xs:rounded-2xl bg-[#27528F] w-full max-w-[180px] ${shouldAnimate ? 'flip-horizontal-bottom' : ''}`}>
       <div
-        className={`border-3 xs:border-3 border-[#27528F] rounded-lg xs:rounded-xl overflow-hidden`}
+        className={`h-full border-3 xs:border-3 border-[#27528F] rounded-lg xs:rounded-xl overflow-hidden`}
         onClick={onClick}
       >
-        <div className={`relative w-full aspect-square ${isEliminated ? 'top-3' : ''}`}>
-          <Image
-            unoptimized={true}
-            src={isEliminated ? QuestionMarkImage : getImageSrc()}
-            alt={character.name}
-            className={`object-cover h-full w-full ${isEliminated ? 'p-3 xs:p-4 md:p-5 mt-auto' : ''}`}
-            fill
-            sizes="(max-width: 480px) 100px, (max-width: 768px) 140px, 180px"
-          />
+        <div className={`relative w-full aspect-square`}>
+          {isEliminated ? (
+            <Logo size="small" />
+          ) : (
+            <Image
+              unoptimized={true}
+              src={getImageSrc()}
+              alt={character.name}
+              className="object-cover h-full w-full"
+              fill
+              sizes="(max-width: 480px) 100px, (max-width: 768px) 140px, 180px"
+            />
+          )}
         </div>
         <div className={`text-center w-full bg-[#27528F] py-1 xs:py-1.5 md:py-2 ${isEliminated ? 'invisible' : ''}`}>
           <p className="text-xs xs:text-sm md:text-base truncate px-1" style={{ fontFamily: 'var(--font-jersey-25)', color: 'white' }}>

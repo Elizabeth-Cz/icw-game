@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect, useId } from 'react';
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import Image, { StaticImageData } from "next/image";
 import { useSocket } from "../context/SocketContext";
 import { useGame } from "../context/GameContext";
+
+
 
 // Import all character images dynamically
 import AlexImage from "../assets/Alex.png";
@@ -39,40 +41,47 @@ import TissamImage from "../assets/Tissam.png";
 import TonnyImage from "../assets/Tonny.png";
 import WalaImage from "../assets/Wala.png";
 import QuestionMarkImage from "../assets/question-mark.png";
+import Logo from '@/components/Logo';
 
 // Create an array of all character images for easier looping
-const characterImages = [
-  { src: AlexImage, alt: "Alex" },
-  { src: AnnaImage, alt: "Anna" },
-  { src: BrianImage, alt: "Brian" },
-  { src: DavidImage, alt: "David" },
-  { src: DiogoImage, alt: "Diogo" },
-  { src: DriesImage, alt: "Dries" },
-  { src: ElouanImage, alt: "Elouan" },
-  { src: FrankImage, alt: "Frank" },
-  { src: GiriImage, alt: "Giri" },
-  { src: HiteshImage, alt: "Hitesh" },
-  { src: IvanImage, alt: "Ivan" },
-  { src: IvanaImage, alt: "Ivana" },
-  { src: JeeshanImage, alt: "Jeeshan" },
-  { src: JesseImage, alt: "Jesse" },
-  { src: JosImage, alt: "Jos" },
-  { src: KarlImage, alt: "Karl" },
-  { src: KevinImage, alt: "Kevin" },
-  { src: LinhImage, alt: "Linh" },
-  { src: LizImage, alt: "Liz" },
-  { src: LouiseImage, alt: "Louise" },
-  { src: LucImage, alt: "Luc" },
-  { src: MariaImage, alt: "Maria" },
-  { src: MichielImage, alt: "Michiel" },
-  { src: MikeImage, alt: "Mike" },
-  { src: NickImage, alt: "Nick" },
-  { src: RalphImage, alt: "Ralph" },
-  { src: SidImage, alt: "Sid" },
-  { src: TarekImage, alt: "Tarek" },
-  { src: TissamImage, alt: "Tissam" },
-  { src: TonnyImage, alt: "Tonny" },
-  { src: WalaImage, alt: "Wala" },
+type CharacterImage = {
+  src: StaticImageData;
+  alt: string;
+  team: TeamType;
+};
+
+const characterImages: CharacterImage[] = [
+  { src: AlexImage, alt: "Alex", team: 'rocket'},
+  { src: AnnaImage, alt: "Anna" ,team: 'management'},
+  { src: BrianImage, alt: "Brian" ,team: 'management'},
+  { src: DavidImage, alt: "David" ,team: 'amigo'},
+  { src: DiogoImage, alt: "Diogo" ,team: 'rocket'},
+  { src: DriesImage, alt: "Dries" ,team: 'management'},
+  { src: ElouanImage, alt: "Elouan" ,team: 'one'},
+  { src: FrankImage, alt: "Frank" ,team: 'one'},
+  { src: GiriImage, alt: "Giri" ,team: 'one'},
+  { src: HiteshImage, alt: "Hitesh" ,team: 'rocket'},
+  { src: IvanImage, alt: "Ivan" ,team: 'rocket'},
+  { src: IvanaImage, alt: "Ivana" ,team: 'product'},
+  { src: JeeshanImage, alt: "Jeeshan" ,team: 'amigo'},
+  { src: JesseImage, alt: "Jesse" ,team: 'one'},
+  { src: JosImage, alt: "Jos" ,team: 'product'},
+  { src: KarlImage, alt: "Karl" ,team: 'one'},
+  { src: KevinImage, alt: "Kevin" ,team: 'rocket'},
+  { src: LinhImage, alt: "Linh" ,team: 'rocket'},
+  { src: LizImage, alt: "Liz" ,team: 'rocket'},
+  { src: LouiseImage, alt: "Louise" ,team: 'product'},
+  { src: LucImage, alt: "Luc" ,team: 'product'},
+  { src: MariaImage, alt: "Maria" ,team: 'product'},
+  { src: MichielImage, alt: "Michiel" ,team: 'management'},
+  { src: MikeImage, alt: "Mike" ,team: 'product'},
+  { src: NickImage, alt: "Nick" ,team: 'amigo'},
+  { src: RalphImage, alt: "Ralph" ,team: 'one'},
+  { src: SidImage, alt: "Sid" ,team: 'one'},
+  { src: TarekImage, alt: "Tarek" ,team: 'amigo'},
+  { src: TissamImage, alt: "Tissam" ,team: 'product'},
+  { src: TonnyImage, alt: "Tonny" ,team: 'amigo'},
+  { src: WalaImage, alt: "Wala" ,team: 'one'},
 ];
 
 // Define background colors for the border, grouped by color family
@@ -90,6 +99,16 @@ const colorFamilies = [
   // Teals/Cyans
   ["#0390A1", "#0AACBF", "#007D8C"]
 ];
+
+type TeamType = 'rocket' | 'management' | 'one' | 'product' | 'amigo';
+
+const teamBgClass: Record<TeamType, string> = {
+  rocket: "bg-[#237658]",
+  management: "bg-[#D0B334]",
+  one: "bg-[#D34F34]",
+  product: "bg-[#27528F]",
+  amigo: "bg-[#0390A1]"
+}
 
 // Flatten array for backward compatibility
 const bgColors = colorFamilies.flat();
@@ -383,32 +402,7 @@ export default function Home() {
             <div className="mb-6 bg-[#1C1817] rounded-4xl border-cream-100 w-[130%] -ml-[15%] relative z-10 border-12 border-[#1C1817]">
               <div className="border-5 border-[#E8DBBC] rounded-3xl">
                 <div className="relative inline-block">
-                  <h1 className="font-bold text-[#E25B45] mr-6" style={{
-                    fontFamily: 'var(--font-irish-grover)',
-                    textShadow: '-2px -2px 0 #E8DBBC, 2px -2px 0 #E8DBBC, -2px 2px 0 #E8DBBC, 2px 2px 0 #E8DBBC, 3px 3px 0px rgba(0,0,0,0.2)',
-                    display: 'inline-block',
-                    position: 'relative',
-                    fontSize: '4rem',
-                    textAlign: 'left',
-                  }}>
-                    <span style={{ position: 'relative', right: '2rem', bottom: '-1rem' }}>Guess</span>
-                    <br />
-                    <span style={{ position: 'relative', right: '2rem', top: '-1rem' }}>Who</span>
-                  </h1>
-                  <Image
-                    src={QuestionMarkImage}
-                    alt="Question Mark"
-                    width={160}
-                    height={160}
-                    style={{
-                      position: 'absolute',
-                      right: '-3rem',
-                      top: '50%',
-                      transform: 'translateY(-50%) rotate(5deg)',
-                      overflow: 'hidden',
-                      zIndex: -2
-                    }}
-                  />
+                  <Logo size="large" />
                   <div>
                   </div>
                 </div>
@@ -527,7 +521,7 @@ export default function Home() {
                   alt={characterImages[characterIndex].alt}
                   width={64}
                   height={64}
-                  className="object-cover rounded-full"
+                  className={`object-cover rounded-full ${teamBgClass[characterImages[characterIndex].team]}`} // match the background color based on team color
                 />
               </div>
             ) : (
