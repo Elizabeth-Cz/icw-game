@@ -8,5 +8,5 @@ services:
       - key: PORT
         value: 10000
       - key: CLIENT_URL
-        value: ${CLIENT_URL}
+        sync: false
     autoDeploy: true
