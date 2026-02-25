@@ -2,11 +2,13 @@ services:
   - type: web
     name: guess-who-icw-backend
     env: node
-    buildCommand: cd backend && npm install && npm run build
+    buildCommand: cd backend && npm ci --no-audit --no-fund && npm run build
     startCommand: cd backend && npm start
     envVars:
       - key: PORT
         value: 10000
       - key: CLIENT_URL
         sync: false
+      - key: NODE_VERSION
+        value: 20.11.1
     autoDeploy: true
