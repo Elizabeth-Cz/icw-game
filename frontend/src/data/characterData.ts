@@ -52,38 +52,65 @@ export const teamBgClass: Record<TeamType, string> = {
   amigo: "bg-[#0390A1]"
 };
 
+// Color families from page.tsx
+export const colorFamilies = [
+  // Greens
+  ["#237658", "#1A8A70", "#2C9678"],
+  // Yellows/Golds
+  ["#D0B334", "#E6C13D", "#C9A428"],
+  // Reds/Oranges
+  ["#D34F34", "#E05B41", "#C64025"],
+  // Pinks/Purples
+  ["#D084A9", "#C46B97", "#B85F8A"],
+  // Blues
+  ["#27528F", "#3468B0", "#1E4578"],
+  // Teals/Cyans
+  ["#0390A1", "#0AACBF", "#007D8C"]
+];
+
+// Map of team colors to their complementary color families
+export const teamComplementaryColors: Record<TeamType, string[]> = {
+  rocket: colorFamilies[3],      // Rocket (Green #237658) -> Pinks/Purples (opposite)
+  management: colorFamilies[5],  // Management (Gold #D0B334) -> Teals/Cyans (opposite)
+  one: colorFamilies[4],         // One (Red/Orange #D34F34) -> Blues (opposite)
+  product: colorFamilies[2],     // Product (Blue #4f7ec1) -> Reds/Oranges (opposite)
+  amigo: colorFamilies[1]        // Amigo (Teal #0390A1) -> Yellows/Golds (opposite)
+};
+
 // Map of character names to their PNG images and teams
+// Organized to ensure no two characters from the same team are adjacent in the frame
+// and to distribute team colors evenly around the entire grid
 export const characterData: Record<string, CharacterImageData> = {
   'Alex': { image: AlexImage, team: 'rocket' },
   'Anna': { image: AnnaImage, team: 'management' },
-  'Brian': { image: BrianImage, team: 'management' },
+  'Elouan': { image: ElouanImage, team: 'one' },
+  'Ivana': { image: IvanaImage, team: 'product' },
   'David': { image: DavidImage, team: 'amigo' },
   'Diogo': { image: DiogoImage, team: 'rocket' },
-  'Dries': { image: DriesImage, team: 'management' },
-  'Elouan': { image: ElouanImage, team: 'one' },
+  'Brian': { image: BrianImage, team: 'management' },
   'Frank': { image: FrankImage, team: 'one' },
-  'Giri': { image: GiriImage, team: 'one' },
-  'Hitesh': { image: HiteshImage, team: 'rocket' },
-  'Ivan': { image: IvanImage, team: 'rocket' },
-  'Ivana': { image: IvanaImage, team: 'product' },
-  'Jeeshan': { image: JeeshanImage, team: 'amigo' },
-  'Jesse': { image: JesseImage, team: 'one' },
   'Jos': { image: JosImage, team: 'product' },
-  'Karl': { image: KarlImage, team: 'management' },
-  'Kevin': { image: KevinImage, team: 'rocket' },
-  'Linh': { image: LinhImage, team: 'rocket' },
-  'Liz': { image: LizImage, team: 'rocket' },
+  'Jeeshan': { image: JeeshanImage, team: 'amigo' },
+  'Hitesh': { image: HiteshImage, team: 'rocket' },
+  'Dries': { image: DriesImage, team: 'management' },
+  'Giri': { image: GiriImage, team: 'one' },
   'Louise': { image: LouiseImage, team: 'product' },
-  'Luc': { image: LucImage, team: 'product' },
-  'Maria': { image: MariaImage, team: 'one' },
-  'Michiel': { image: MichielImage, team: 'management' },
-  'Mike': { image: MikeImage, team: 'product' },
   'Nick': { image: NickImage, team: 'amigo' },
-  'Ralph': { image: RalphImage, team: 'one' },
-  'Sid': { image: SidImage, team: 'one' },
+  'Ivan': { image: IvanImage, team: 'rocket' },
+  'Karl': { image: KarlImage, team: 'management' },
+  'Jesse': { image: JesseImage, team: 'one' },
+  'Luc': { image: LucImage, team: 'product' },
   'Tarek': { image: TarekImage, team: 'amigo' },
-  'Tissam': { image: TissamImage, team: 'product' },
+  'Kevin': { image: KevinImage, team: 'rocket' },
+  'Michiel': { image: MichielImage, team: 'management' },
+  'Maria': { image: MariaImage, team: 'one' },
+  'Mike': { image: MikeImage, team: 'product' },
   'Tonny': { image: TonnyImage, team: 'amigo' },
+  'Linh': { image: LinhImage, team: 'rocket' },
+  'Ralph': { image: RalphImage, team: 'one' },
+  'Tissam': { image: TissamImage, team: 'product' },
+  'Liz': { image: LizImage, team: 'rocket' },
+  'Sid': { image: SidImage, team: 'one' },
   'Wala': { image: WalaImage, team: 'one' },
   'Kenny': { image: KennyImage, team: 'rocket' }
 };
