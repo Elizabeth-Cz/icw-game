@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSocket } from "../../context/SocketContext";
 import { useGame, Character } from "../../context/GameContext";
@@ -76,6 +76,14 @@ const characterImages: Record<string, any> = {
 };
 
 export default function CharacterAssignment() {
+  return (
+    <Suspense fallback={null}>
+      <CharacterAssignmentInner />
+    </Suspense>
+  );
+}
+
+function CharacterAssignmentInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomCode = searchParams.get("roomCode");
