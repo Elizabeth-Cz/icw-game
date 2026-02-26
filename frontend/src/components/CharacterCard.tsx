@@ -38,9 +38,9 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
   };
 
   return (
-    <div className={`border-3 xs:border-3 border-[#D8C8AE] rounded-xl xs:rounded-2xl bg-[#27528F] w-full max-w-[180px] ${shouldAnimate ? 'flip-horizontal-bottom' : ''}`}>
+    <div className={`rounded-xl xs:rounded-2xl bg-[#D8C8AE] p-[3px] w-full max-w-[180px] ${shouldAnimate ? 'flip-horizontal-bottom' : ''}`}>
       <div
-        className={`h-full border-3 xs:border-3 border-[#27528F] rounded-lg xs:rounded-xl overflow-hidden`}
+        className={`h-full bg-[#27528F] rounded-lg xs:rounded-xl overflow-hidden`}
         onClick={onClick}
       >
         <div className={`relative w-full aspect-square`}>
