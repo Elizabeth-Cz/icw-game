@@ -1,11 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSocket } from "../../context/SocketContext";
 import { useGame } from "../../context/GameContext";
 
 export default function CreateGame() {
+  return (
+    <Suspense fallback={null}>
+      <CreateGameInner />
+    </Suspense>
+  );
+}
+
+function CreateGameInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomCode = searchParams.get("roomCode");
