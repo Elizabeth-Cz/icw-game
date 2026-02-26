@@ -40,7 +40,7 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
   return (
     <div className={`rounded-xl xs:rounded-2xl bg-[#D8C8AE] p-[3px] w-full max-w-[180px] ${shouldAnimate ? 'flip-horizontal-bottom' : ''}`}>
       <div
-        className={`h-full rounded-lg xs:rounded-xl overflow-hidden border-4 border-[var(--dark-blue)]`}
+        className={`h-full rounded-lg xs:rounded-xl overflow-hidden border-4 border-[var(--dark-blue)] ${isEliminated ? 'bg-[#27528F]' : ''}`}
         onClick={onClick}
       >
         <div className={`relative w-full aspect-square`}>
