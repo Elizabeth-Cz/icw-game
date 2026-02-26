@@ -284,7 +284,7 @@ function GameBoardInner() {
               {characters.map((character) => (
                 <div 
                   key={character.id} 
-                  className={`relative rounded-lg overflow-hidden border-2 border-[#D8C8AE]`}
+                  className={`relative rounded-lg overflow-hidden`}
                 >
                   <CharacterCard
                     character={character}

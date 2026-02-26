@@ -48,7 +48,7 @@ export const teamBgClass: Record<TeamType, string> = {
   rocket: "bg-[#237658]",
   management: "bg-[#D0B334]",
   one: "bg-[#D34F34]",
-  product: "bg-[#27528F]",
+  product: "bg-[#4f7ec1]",
   amigo: "bg-[#0390A1]"
 };
 
