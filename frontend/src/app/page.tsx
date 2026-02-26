@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useSocket } from "../context/SocketContext";
 import { useGame } from "../context/GameContext";
-import { getCharacterImagesArray, teamBgClass, TeamType } from "../data/characterData";
+import { getCharacterImagesArray, teamBgClass, TeamType, teamComplementaryColors } from "../data/characterData";
 import QuestionMarkImage from "../assets/question-mark.png";
 import Logo from '@/components/Logo';
 
@@ -58,7 +58,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rotationOffset, setRotationOffset] = useState(0); // Track the current rotation position
-  const [isAnimationEnabled, setIsAnimationEnabled] = useState(false); // Toggle for animation
+  const [isAnimationEnabled, setIsAnimationEnabled] = useState(true); // Toggle for animation
   const [isMouseDown, setIsMouseDown] = useState(false); // Track if mouse is being held down
   // Initialize with static colors first to avoid hydration mismatch
   const [frameColors, setFrameColors] = useState<string[]>(() => {
@@ -192,28 +192,23 @@ export default function Home() {
     return () => clearTimeout(clearInvalidTokenTimeout);
   }, [socket, connected, error]);
 
-  // Animation effect for rotating frame elements with random colors
+  // Animation effect for rotating frame elements with their background colors
   useEffect(() => {
     // Only set up the interval if animation is enabled AND mouse is not being held down
     if (!isAnimationEnabled || isMouseDown) return;
     
     const animationInterval = setInterval(() => {
-      // Update rotation for character images
-      setRotationOffset(prev => (prev + 1) % characterImages.length); // Increment and wrap around
+      // Shift both characters and colors one position to the right
+      setRotationOffset(prev => (prev + 1) % characterImages.length);
       
-      // Generate new colors for frame cells, ensuring adjacent cells have different color families
+      // Shift frame colors one position to the right (last color moves to first)
       setFrameColors(prev => {
-        const newColors: string[] = [];
-        
-        // For each position, get the index of the previous color in bgColors array
-        for (let i = 0; i < prev.length; i++) {
-          const prevColorIndex = bgColors.indexOf(prev[i]);
-          
-          // Get a color from a different family
-          const newColor = getDistinctColor(prevColorIndex);
-          newColors.push(newColor);
+        if (prev.length === 0) return prev;
+        const newColors = [...prev];
+        const lastColor = newColors.pop();
+        if (lastColor) {
+          newColors.unshift(lastColor);
         }
-        
         return newColors;
       });
     }, 300);
@@ -403,23 +398,14 @@ export default function Home() {
         let bgColor = '#1f2937'; // Default dark gray for non-frame cells
         
         if (isFrame) {
-          if (framePosition !== -1 && framePosition < frameColors.length) {
-            // Use color from frameColors array for this frame position
-            bgColor = frameColors[framePosition];
-          } else {
-            // Fallback to original pattern if framePosition is invalid
-            let fallbackIndex = 0;
-            if (col === 0 && row >= 1) { // Left column
-              fallbackIndex = row % 2 === 0 ? 0 : 1;
-            } else if (col === 5 && row >= 1) { // Right column
-              fallbackIndex = row % 2 === 0 ? 4 : 5;
-            } else if (cellNumber <= 6) { // Top row
-              fallbackIndex = col % bgColors.length;
-            } else { // Bottom row
-              fallbackIndex = col % bgColors.length;
-            }
-            bgColor = bgColors[fallbackIndex];
-          }
+          // Get the character's team for this frame position
+          const character = characterImages[characterIndex];
+          const team = character.team;
+          const complementaryColors = teamComplementaryColors[team];
+          
+          // Use a fixed color from the complementary family based on frame position
+          const colorIndex = framePosition % complementaryColors.length;
+          bgColor = complementaryColors[colorIndex];
         }
 
         return (
