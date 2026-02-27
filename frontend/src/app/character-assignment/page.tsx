@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSocket } from "../../context/SocketContext";
 import { useGame, Character } from "../../context/GameContext";
-import Image from "next/image";
 
 // Import all character images dynamically
 import AlexImage from "../../assets/Alex.png";
@@ -25,6 +24,7 @@ import JosImage from "../../assets/Jos.png";
 import KarlImage from "../../assets/Karl.png";
 import KevinImage from "../../assets/Kevin.png";
 import LinhImage from "../../assets/Linh.png";
+import KennyImage from "../../assets/Kenny.png";
 import LizImage from "../../assets/Liz.png";
 import LouiseImage from "../../assets/Louise.png";
 import LucImage from "../../assets/Luc.png";
@@ -59,6 +59,7 @@ const characterImages: Record<string, any> = {
   "Jesse": JesseImage,
   "Jos": JosImage,
   "Karl": KarlImage,
+  "Kenny": KennyImage,
   "Kevin": KevinImage,
   "Linh": LinhImage,
   "Liz": LizImage,
@@ -172,7 +173,7 @@ function CharacterAssignmentInner() {
   };
 
   return (
-    <div className="p-12 bg-[#1C1817] text-[#D8C8AE] h-screen text-center">
+    <div className="p-6 bg-[#1C1817] text-[#D8C8AE] h-screen text-center">
       <BackButton
         onClick={handleBack}
         
@@ -209,7 +210,7 @@ function CharacterAssignmentInner() {
         <button
           onClick={handleContinue}
           disabled={isLoading || !gameState.secretCharacter}
-          className="rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl mt-6"
+          className="rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl mt-auto"
           style={{ boxShadow: '5px 7px #D34F34', fontFamily: 'var(--font-jersey-25)' }}
         >
           {isLoading ? "Loading..." : "Continue to Game"}

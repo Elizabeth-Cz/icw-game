@@ -131,7 +131,7 @@ function CreateGameInner() {
   };
 
   return (
-    <div className="p-12 bg-[#1C1817] text-[#D8C8AE] h-screen text-center">
+    <div className="p-6 bg-[#1C1817] text-[#D8C8AE] h-screen text-center">
       <BackButton
         onClick={handleBack}
 
@@ -146,11 +146,10 @@ function CreateGameInner() {
           <p className="text-lg text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-25)' }}>Share this code with your opponent</p>
           <div className="flex flex-row gap-4">
             {roomCode?.split('').map((char, index) => (
-              <span key={index} className="rounded-xl p-4 border-2 border-[#0390A1] bg-[#1C1817] font-bold text-xl text-center"
+              <span key={index} className="w-12 rounded-xl p-2 border-2 border-[#0390A1] bg-[#1C1817] font-bold text-2xl text-center"
                 style={{ fontFamily: 'var(--font-jersey-10)', boxShadow: '5px 7px #0390A1' }}>{char}</span>
             ))}
           </div>
-
           {roomCode && (
             <div className="flex flex-col items-center gap-2 w-full max-w-md">
               <p className="text-lg text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-25)' }}>
@@ -193,7 +192,7 @@ function CreateGameInner() {
           )}
         </div>
 
-        <form onSubmit={handleSubmitName} className="flex flex-col h-full justify-evenly gap-10" style={{ fontFamily: 'var(--font-jersey-25)' }}>
+        <form onSubmit={handleSubmitName} className="flex flex-col h-full gap-10" style={{ fontFamily: 'var(--font-jersey-25)' }}>
           <div className="flex flex-col items-center text-xl gap-4">
             <label className="">
               Your name
@@ -234,7 +233,7 @@ function CreateGameInner() {
           <button
             type="submit"
             disabled={!name.trim()}
-            className="rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl"
+            className="rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl mt-auto"
             style={{ boxShadow: '5px 7px #D34F34' }}
           >
             Continue
