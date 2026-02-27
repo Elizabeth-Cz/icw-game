@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSocket } from "../../context/SocketContext";
 import { useGame, Character } from "../../context/GameContext";
-import Image from "next/image";
 
 // Import all character images dynamically
 import AlexImage from "../../assets/Alex.png";
@@ -25,6 +24,7 @@ import JosImage from "../../assets/Jos.png";
 import KarlImage from "../../assets/Karl.png";
 import KevinImage from "../../assets/Kevin.png";
 import LinhImage from "../../assets/Linh.png";
+import KennyImage from "../../assets/Kenny.png";
 import LizImage from "../../assets/Liz.png";
 import LouiseImage from "../../assets/Louise.png";
 import LucImage from "../../assets/Luc.png";
@@ -59,6 +59,7 @@ const characterImages: Record<string, any> = {
   "Jesse": JesseImage,
   "Jos": JosImage,
   "Karl": KarlImage,
+  "Kenny": KennyImage,
   "Kevin": KevinImage,
   "Linh": LinhImage,
   "Liz": LizImage,

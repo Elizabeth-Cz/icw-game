@@ -36,6 +36,7 @@ import TarekImage from "../../assets/Tarek.png";
 import TissamImage from "../../assets/Tissam.png";
 import TonnyImage from "../../assets/Tonny.png";
 import WalaImage from "../../assets/Wala.png";
+import KennyImage from "../../assets/Kenny.png";
 
 // Create an array of all characters
 const allCharacters: Character[] = [
@@ -70,6 +71,7 @@ const allCharacters: Character[] = [
   { id: '29', name: 'Tissam', avatarUrl: '' },
   { id: '30', name: 'Tonny', avatarUrl: '' },
   { id: '31', name: 'Wala', avatarUrl: '' },
+  { id: '32', name: 'Kenny', avatarUrl: '' },
 ];
 
 export default function CharacterGallery() {
