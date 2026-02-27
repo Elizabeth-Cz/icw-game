@@ -7,6 +7,7 @@ import { useGame } from "../../context/GameContext";
 import { characterData } from "../../data/characterData";
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from "@headlessui/react";
 import BackButton from "@/components/BackButton";
+import { IoCopyOutline } from "react-icons/io5";
 
 export default function CreateGame() {
   return (
@@ -133,7 +134,7 @@ function CreateGameInner() {
     <div className="p-12 bg-[#1C1817] text-[#D8C8AE] h-screen text-center">
       <BackButton
         onClick={handleBack}
-        
+
         iconClassName="mr-1 h-5 w-5"
       />
       <main className="h-full flex flex-col items-center p-8 gap-6">
@@ -146,7 +147,7 @@ function CreateGameInner() {
           <div className="flex flex-row gap-4">
             {roomCode?.split('').map((char, index) => (
               <span key={index} className="rounded-xl p-4 border-2 border-[#0390A1] bg-[#1C1817] font-bold text-xl text-center"
-                style={{ fontFamily: 'var(--font-jersey-10)' ,  boxShadow: '5px 7px #0390A1'}}>{char}</span>
+                style={{ fontFamily: 'var(--font-jersey-10)', boxShadow: '5px 7px #0390A1' }}>{char}</span>
             ))}
           </div>
 
@@ -156,25 +157,26 @@ function CreateGameInner() {
                 Or share this link
               </p>
               <div className="flex flex-col gap-3 items-center w-full">
-                <input
-                  type="text"
-                  value={joinUrl}
-                  readOnly
-                  className="rounded-xl w-full border-2 border-[#0390A1] bg-[#1C1817] px-4 py-3 font-bold text-sm text-[#D8C8AE]"
-                  style={{ boxShadow: '5px 7px #0390A1', fontFamily: 'var(--font-jersey-25)' }}
-                />
-                <button
-                  type="button"
-                  onClick={handleCopyJoinUrl}
-                  className="rounded-xl w-32 border-2 border-[#D34F34] bg-[#1C1817] h-12 font-bold text-sm"
-                  style={{ boxShadow: '5px 7px #D34F34', fontFamily: 'var(--font-jersey-25)' }}
-                >
-                  Copy
-                </button>
+                <div className="relative w-full">
+                  <input
+                    type="text"
+                    value={`\/join-game?roomCode=${encodeURIComponent(roomCode)}`}
+                    readOnly
+                    className="rounded-xl w-full border-2 border-[#0390A1] bg-[#1C1817] px-4 pr-12 py-3 font-bold text-sm text-[#D8C8AE]"
+                    style={{ boxShadow: '5px 7px #0390A1', fontFamily: 'var(--font-jersey-25)' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopyJoinUrl}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D8C8AE]"
+                    aria-label="Copy join link"
+                  >
+                    <IoCopyOutline />
+                  </button>
+                </div>
                 <p
-                  className={`text-sm text-[#7BBB63] min-h-[1.25rem] ${
-                    isJoinUrlCopied ? "opacity-100" : "opacity-0"
-                  }`}
+                  className={`text-sm text-[#7BBB63] min-h-[1.25rem] ${isJoinUrlCopied ? "opacity-100" : "opacity-0"
+                    }`}
                   style={{ fontFamily: 'var(--font-jersey-25)' }}
                   aria-live="polite"
                 >
@@ -199,7 +201,7 @@ function CreateGameInner() {
             <Listbox value={name} onChange={setName}>
               <div className="relative w-48">
                 <ListboxButton className="rounded-xl w-full border-2 border-[#0390A1] bg-[#1C1817] px-6 py-4 font-bold text-xl text-[#D8C8AE] text-left flex justify-between items-center"
-                  style={{ 
+                  style={{
                     boxShadow: '5px 7px #0390A1',
                     fontFamily: 'var(--font-jersey-25)'
                   }}
@@ -217,8 +219,7 @@ function CreateGameInner() {
                       key={characterName}
                       value={characterName}
                       className={({ active }) =>
-                        `px-6 py-3 cursor-pointer text-[#D8C8AE] ${
-                          active ? 'bg-[#0390A1] text-[#1C1817]' : ''
+                        `px-6 py-3 cursor-pointer text-[#D8C8AE] ${active ? 'bg-[#0390A1] text-[#1C1817]' : ''
                         } ${name === characterName ? 'bg-[#0390A1] text-[#1C1817]' : ''}`
                       }
                     >
