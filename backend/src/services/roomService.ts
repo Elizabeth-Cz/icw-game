@@ -20,10 +20,10 @@ export interface Room {
 export class RoomService {
   private rooms: Record<string, Room> = {};
 
-  // Generate a random 6-digit room code
+  // Generate a random 4-digit room code
   generateRoomCode(): string {
-    const min = 100000;
-    const max = 999999;
+    const min = 1000;
+    const max = 9999;
     let roomCode: string;
 
     do {

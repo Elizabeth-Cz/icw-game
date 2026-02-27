@@ -6,6 +6,7 @@ import { useSocket } from "../../context/SocketContext";
 import { useGame } from "../../context/GameContext";
 import { characterData } from "../../data/characterData";
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from "@headlessui/react";
+import BackButton from "@/components/BackButton";
 
 
 export default function JoinGame() {
@@ -76,9 +77,9 @@ export default function JoinGame() {
       return;
     }
 
-    // Validate room code (6 digits)
-    if (!/^\d{6}$/.test(roomCodeInput)) {
-      setError("Please enter a valid 6-digit room code.");
+    // Validate room code (4 digits)
+    if (!/^\d{4}$/.test(roomCodeInput)) {
+      setError("Please enter a valid 4-digit room code.");
       return;
     }
 
@@ -112,24 +113,11 @@ export default function JoinGame() {
 
   return (
     <div className="p-12 bg-[#1C1817] text-[#D8C8AE] h-screen text-center">
-        <button
-          onClick={handleBack}
-          className="mr-auto flex"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="mr-1 h-5 w-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Back
-        </button>
+      <BackButton
+        onClick={handleBack}
+        
+        iconClassName="mr-1 h-5 w-5"
+      />
       <main className="h-full flex flex-col items-center p-8 gap-6">
         <div className="bg-gray-800 rounded-lg py-2 px-6 inline-block w-64">
           <h1 className="text-4xl font-bold text-[#EAC006]" style={{ fontFamily: 'var(--font-jersey-10)' }}>• Join Game •</h1>
@@ -138,7 +126,7 @@ export default function JoinGame() {
         <form onSubmit={handleSubmit} className="flex flex-col h-full justify-evenly gap-10" style={{ fontFamily: 'var(--font-jersey-25)' }}>
           <div className="flex flex-col items-center text-xl gap-4">
             <label htmlFor="roomCode" className="">
-              Enter the 6 digit code
+              Enter the 4 digit code
             </label>
             <input
               type="number"
@@ -146,7 +134,7 @@ export default function JoinGame() {
               value={roomCodeInput}
               onChange={(e) => setRoomCodeInput(e.target.value)}
               className="rounded-xl w-48 border-2 border-[#0390A1] bg-[#1C1817] h-20 font-bold text-xl text-center"
-              style={{ boxShadow: '5px 7px #0390A1' }}              maxLength={6}
+              style={{ boxShadow: '5px 7px #0390A1' }}              maxLength={4}
               required
             />
           </div>
@@ -191,7 +179,7 @@ export default function JoinGame() {
 
           <button
             type="submit"
-            disabled={isLoading || !connected || roomCodeInput.length !== 6 || !name.trim()}
+            disabled={isLoading || !connected || roomCodeInput.length !== 4 || !name.trim()}
                           className="w-full rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl"
               style={{ boxShadow: '5px 7px #D34F34' }}
           >

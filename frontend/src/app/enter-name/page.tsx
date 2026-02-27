@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSocket } from "../../context/SocketContext";
 import { useGame } from "../../context/GameContext";
+import BackButton from "@/components/BackButton";
 
 export default function EnterName() {
   return (
@@ -91,24 +92,12 @@ function EnterNameInner() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-blue-100 p-4">
       <main className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
-        <button
+        <BackButton
           onClick={handleBack}
           className="mb-6 flex items-center text-blue-600 hover:text-blue-800"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="mr-1 h-5 w-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Back
-        </button>
+          iconClassName="mr-1 h-5 w-5"
+          labelClassName=""
+        />
 
         <div className="mb-8 text-center">
           <h1 className="mb-4 text-2xl font-bold text-blue-800">Enter Your Name</h1>
