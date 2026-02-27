@@ -180,7 +180,7 @@ export default function JoinGame() {
           <button
             type="submit"
             disabled={isLoading || !connected || roomCodeInput.length !== 4 || !name.trim()}
-                          className="w-full rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl mt-auto mt-auto"
+                          className="w-full rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl mt-auto"
               style={{ boxShadow: '5px 7px #D34F34' }}
           >
             {isLoading ? "Joining..." : "Continue"}
