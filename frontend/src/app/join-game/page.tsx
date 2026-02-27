@@ -6,6 +6,7 @@ import { useSocket } from "../../context/SocketContext";
 import { useGame } from "../../context/GameContext";
 import { characterData } from "../../data/characterData";
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from "@headlessui/react";
+import BackButton from "@/components/BackButton";
 
 
 export default function JoinGame() {
@@ -112,24 +113,11 @@ export default function JoinGame() {
 
   return (
     <div className="p-12 bg-[#1C1817] text-[#D8C8AE] h-screen text-center">
-        <button
-          onClick={handleBack}
-          className="mr-auto flex"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="mr-1 h-5 w-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Back
-        </button>
+      <BackButton
+        onClick={handleBack}
+        
+        iconClassName="mr-1 h-5 w-5"
+      />
       <main className="h-full flex flex-col items-center p-8 gap-6">
         <div className="bg-gray-800 rounded-lg py-2 px-6 inline-block w-64">
           <h1 className="text-4xl font-bold text-[#EAC006]" style={{ fontFamily: 'var(--font-jersey-10)' }}>• Join Game •</h1>
