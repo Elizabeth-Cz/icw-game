@@ -76,9 +76,9 @@ export default function JoinGame() {
       return;
     }
 
-    // Validate room code (6 digits)
-    if (!/^\d{6}$/.test(roomCodeInput)) {
-      setError("Please enter a valid 6-digit room code.");
+    // Validate room code (4 digits)
+    if (!/^\d{4}$/.test(roomCodeInput)) {
+      setError("Please enter a valid 4-digit room code.");
       return;
     }
 
@@ -138,7 +138,7 @@ export default function JoinGame() {
         <form onSubmit={handleSubmit} className="flex flex-col h-full justify-evenly gap-10" style={{ fontFamily: 'var(--font-jersey-25)' }}>
           <div className="flex flex-col items-center text-xl gap-4">
             <label htmlFor="roomCode" className="">
-              Enter the 6 digit code
+              Enter the 4 digit code
             </label>
             <input
               type="number"
@@ -146,7 +146,7 @@ export default function JoinGame() {
               value={roomCodeInput}
               onChange={(e) => setRoomCodeInput(e.target.value)}
               className="rounded-xl w-48 border-2 border-[#0390A1] bg-[#1C1817] h-20 font-bold text-xl text-center"
-              style={{ boxShadow: '5px 7px #0390A1' }}              maxLength={6}
+              style={{ boxShadow: '5px 7px #0390A1' }}              maxLength={4}
               required
             />
           </div>
@@ -191,7 +191,7 @@ export default function JoinGame() {
 
           <button
             type="submit"
-            disabled={isLoading || !connected || roomCodeInput.length !== 6 || !name.trim()}
+            disabled={isLoading || !connected || roomCodeInput.length !== 4 || !name.trim()}
                           className="w-full rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl"
               style={{ boxShadow: '5px 7px #D34F34' }}
           >
