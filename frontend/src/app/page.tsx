@@ -309,7 +309,7 @@ export default function Home() {
   return (
     <div className="w-full h-screen grid grid-cols-6 grid-rows-10 relative">
       {/* Main content area - positioned absolutely to cover the inner cells but not overlap with borders */}
-      <div className="absolute top-[10%] left-[16.67%] w-[66.66%] h-[80%] flex items-center justify-center">
+      <div className="absolute top-[10%] left-[16.67%] w-[66.66%] h-[80%] flex items-center justify-center z-10 pointer-events-auto">
         <div className="rounded-xl bg-[#1C1817] border-cream-100 w-full h-full flex flex-col justify-between">
           <div className="text-center">
             <div className="mb-6 bg-[#1C1817] rounded-4xl border-cream-100 w-[130%] -ml-[15%] relative z-10 border-12 border-[#1C1817]">
@@ -411,7 +411,7 @@ export default function Home() {
         return (
           <div
             key={`cell-${index}`}
-            className="flex items-center justify-center"
+            className="flex items-center justify-center pointer-events-none"
             style={{ backgroundColor: bgColor }}
           >
             {isFrame ? (
