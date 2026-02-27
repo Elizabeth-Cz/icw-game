@@ -172,7 +172,7 @@ function CharacterAssignmentInner() {
   };
 
   return (
-    <div className="p-12 bg-[#1C1817] text-[#D8C8AE] h-screen text-center">
+    <div className="p-6 bg-[#1C1817] text-[#D8C8AE] h-screen text-center">
       <BackButton
         onClick={handleBack}
         
@@ -209,7 +209,7 @@ function CharacterAssignmentInner() {
         <button
           onClick={handleContinue}
           disabled={isLoading || !gameState.secretCharacter}
-          className="rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl mt-6"
+          className="rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl mt-auto mt-6"
           style={{ boxShadow: '5px 7px #D34F34', fontFamily: 'var(--font-jersey-25)' }}
         >
           {isLoading ? "Loading..." : "Continue to Game"}

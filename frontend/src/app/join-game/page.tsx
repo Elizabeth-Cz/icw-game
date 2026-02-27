@@ -112,7 +112,7 @@ export default function JoinGame() {
   };
 
   return (
-    <div className="p-12 bg-[#1C1817] text-[#D8C8AE] h-screen text-center">
+    <div className="p-6 bg-[#1C1817] text-[#D8C8AE] h-screen text-center">
       <BackButton
         onClick={handleBack}
         
@@ -123,7 +123,7 @@ export default function JoinGame() {
           <h1 className="text-4xl font-bold text-[#EAC006]" style={{ fontFamily: 'var(--font-jersey-10)' }}>• Join Game •</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col h-full justify-evenly gap-10" style={{ fontFamily: 'var(--font-jersey-25)' }}>
+        <form onSubmit={handleSubmit} className="flex flex-col h-full gap-10" style={{ fontFamily: 'var(--font-jersey-25)' }}>
           <div className="flex flex-col items-center text-xl gap-4">
             <label htmlFor="roomCode" className="">
               Enter the 4 digit code
@@ -180,7 +180,7 @@ export default function JoinGame() {
           <button
             type="submit"
             disabled={isLoading || !connected || roomCodeInput.length !== 4 || !name.trim()}
-                          className="w-full rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl"
+                          className="w-full rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl mt-auto mt-auto"
               style={{ boxShadow: '5px 7px #D34F34' }}
           >
             {isLoading ? "Joining..." : "Continue"}
