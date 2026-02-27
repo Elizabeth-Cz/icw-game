@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { ArrowBigLeft } from "lucide-react";
 
 type BackButtonProps = {
   onClick: () => void;
@@ -20,9 +19,8 @@ export default function BackButton({
 }: BackButtonProps) {
   return (
     <button onClick={onClick} type="button" className='mr-auto flex items-center'>
-      <ArrowBigLeft className={iconClassName ?? "mr-1 h-5 w-5"} />
       <span className={labelClassName} style={{ fontFamily: "var(--font-jersey-10)" }}>
-        {label}
+        	&lt; {label}
       </span>
     </button>
   );
