@@ -321,7 +321,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className="bg-gray-800 rounded-lg py-2 px-6 mt-10 inline-block">
+            <div className="bg-gray-800 rounded-lg py-2 px-6 inline-block">
               <h2 className="text-4xl font-bold text-[#EAC006]" style={{ fontFamily: 'var(--font-jersey-10)' }}>• ICW Edition •</h2>
             </div>
           </div>
