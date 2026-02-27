@@ -7,6 +7,7 @@ import { useGame } from "../../context/GameContext";
 import { characterData } from "../../data/characterData";
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from "@headlessui/react";
 import BackButton from "@/components/BackButton";
+import { IoCopyOutline } from "react-icons/io5";
 
 export default function CreateGame() {
   return (
@@ -23,9 +24,34 @@ function CreateGameInner() {
   const { socket } = useSocket();
   const { gameState, setPlayerName } = useGame();
 
+  const [isJoinUrlCopied, setIsJoinUrlCopied] = useState(false);
+
+  const joinUrl = roomCode
+    ? `${window.location.origin}/join-game?roomCode=${encodeURIComponent(roomCode)}`
+    : "";
+
+  const handleCopyJoinUrl = async () => {
+    if (!joinUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(joinUrl);
+      setIsJoinUrlCopied(true);
+    } catch {
+      // Ignore; clipboard may be unavailable in some contexts.
+    }
+  };
+
   const [name, setName] = useState("");
   const [isWaiting, setIsWaiting] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isJoinUrlCopied) return;
+    const timeoutId = window.setTimeout(() => {
+      setIsJoinUrlCopied(false);
+    }, 2000);
+    return () => window.clearTimeout(timeoutId);
+  }, [isJoinUrlCopied]);
 
   // Redirect if no room code
   useEffect(() => {
@@ -108,7 +134,7 @@ function CreateGameInner() {
     <div className="p-6 bg-[#1C1817] text-[#D8C8AE] h-screen text-center">
       <BackButton
         onClick={handleBack}
-        
+
         iconClassName="mr-1 h-5 w-5"
       />
       <main className="h-full flex flex-col items-center p-8 gap-6">
@@ -124,11 +150,45 @@ function CreateGameInner() {
                 style={{ fontFamily: 'var(--font-jersey-10)', boxShadow: '5px 7px #0390A1' }}>{char}</span>
             ))}
           </div>
+          {roomCode && (
+            <div className="flex flex-col items-center gap-2 w-full max-w-md">
+              <p className="text-lg text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-25)' }}>
+                Or share this link
+              </p>
+              <div className="flex flex-col gap-3 items-center w-full">
+                <div className="relative w-full">
+                  <input
+                    type="text"
+                    value={`\/join-game?roomCode=${encodeURIComponent(roomCode)}`}
+                    readOnly
+                    className="rounded-xl w-full border-2 border-[#0390A1] bg-[#1C1817] px-4 pr-12 py-3 font-bold text-sm text-[#D8C8AE]"
+                    style={{ boxShadow: '5px 7px #0390A1', fontFamily: 'var(--font-jersey-25)' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopyJoinUrl}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#D8C8AE]"
+                    aria-label="Copy join link"
+                  >
+                    <IoCopyOutline />
+                  </button>
+                </div>
+                <p
+                  className={`text-sm text-[#7BBB63] min-h-[1.25rem] ${isJoinUrlCopied ? "opacity-100" : "opacity-0"
+                    }`}
+                  style={{ fontFamily: 'var(--font-jersey-25)' }}
+                  aria-live="polite"
+                >
+                  Copied!
+                </p>
+              </div>
+            </div>
+          )}
 
           {isWaiting ? (
             <p className="text-lg text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-25)' }}>Waiting for opponent to join...</p>
           ) : (
-            <p className="text-lg text-[#0390A1]" style={{ fontFamily: 'var(--font-jersey-25)' }}>Opponent joined! Enter your name to continue.</p>
+            <p className="text-lg text-[#7BBB63]" style={{ fontFamily: 'var(--font-jersey-25)' }}>Opponent joined! Enter your name to continue.</p>
           )}
         </div>
 
@@ -140,7 +200,7 @@ function CreateGameInner() {
             <Listbox value={name} onChange={setName}>
               <div className="relative w-48">
                 <ListboxButton className="rounded-xl w-full border-2 border-[#0390A1] bg-[#1C1817] px-6 py-4 font-bold text-xl text-[#D8C8AE] text-left flex justify-between items-center"
-                  style={{ 
+                  style={{
                     boxShadow: '5px 7px #0390A1',
                     fontFamily: 'var(--font-jersey-25)'
                   }}
@@ -158,8 +218,7 @@ function CreateGameInner() {
                       key={characterName}
                       value={characterName}
                       className={({ active }) =>
-                        `px-6 py-3 cursor-pointer text-[#D8C8AE] ${
-                          active ? 'bg-[#0390A1] text-[#1C1817]' : ''
+                        `px-6 py-3 cursor-pointer text-[#D8C8AE] ${active ? 'bg-[#0390A1] text-[#1C1817]' : ''
                         } ${name === characterName ? 'bg-[#0390A1] text-[#1C1817]' : ''}`
                       }
                     >
