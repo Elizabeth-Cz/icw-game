@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSocket } from "../../context/SocketContext";
 import { useGame } from "../../context/GameContext";
 import { characterData } from "../../data/characterData";
@@ -11,6 +11,7 @@ import BackButton from "@/components/BackButton";
 
 export default function JoinGame() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { socket, connected } = useSocket();
   const { setRoomCode, setPlayerId, setReconnectToken, setPlayerName } = useGame();
 
@@ -18,6 +19,16 @@ export default function JoinGame() {
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const urlRoomCode = searchParams.get("roomCode");
+
+  useEffect(() => {
+    if (!urlRoomCode) return;
+    const normalized = urlRoomCode.trim();
+    if (/^\d{4}$/.test(normalized)) {
+      setRoomCodeInput(normalized);
+    }
+  }, [urlRoomCode]);
 
   // Listen for socket events
   useEffect(() => {
@@ -129,12 +140,16 @@ export default function JoinGame() {
               Enter the 4 digit code
             </label>
             <input
-              type="number"
+              type="text"
               id="roomCode"
               value={roomCodeInput}
               onChange={(e) => setRoomCodeInput(e.target.value)}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={4}
+              disabled={!!urlRoomCode && /^\d{4}$/.test(urlRoomCode.trim())}
               className="rounded-xl w-48 border-2 border-[#0390A1] bg-[#1C1817] h-20 font-bold text-xl text-center"
-              style={{ boxShadow: '5px 7px #0390A1' }}              maxLength={4}
+              style={{ boxShadow: '5px 7px #0390A1' }}
               required
             />
           </div>

@@ -23,9 +23,34 @@ function CreateGameInner() {
   const { socket } = useSocket();
   const { gameState, setPlayerName } = useGame();
 
+  const [isJoinUrlCopied, setIsJoinUrlCopied] = useState(false);
+
+  const joinUrl = roomCode
+    ? `${window.location.origin}/join-game?roomCode=${encodeURIComponent(roomCode)}`
+    : "";
+
+  const handleCopyJoinUrl = async () => {
+    if (!joinUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(joinUrl);
+      setIsJoinUrlCopied(true);
+    } catch {
+      // Ignore; clipboard may be unavailable in some contexts.
+    }
+  };
+
   const [name, setName] = useState("");
   const [isWaiting, setIsWaiting] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isJoinUrlCopied) return;
+    const timeoutId = window.setTimeout(() => {
+      setIsJoinUrlCopied(false);
+    }, 2000);
+    return () => window.clearTimeout(timeoutId);
+  }, [isJoinUrlCopied]);
 
   // Redirect if no room code
   useEffect(() => {
@@ -125,10 +150,44 @@ function CreateGameInner() {
             ))}
           </div>
 
+          {roomCode && (
+            <div className="flex flex-col items-center gap-2 w-full max-w-md">
+              <p className="text-lg text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-25)' }}>
+                Or share this link
+              </p>
+              <div className="flex flex-col gap-3 items-center w-full">
+                <input
+                  type="text"
+                  value={joinUrl}
+                  readOnly
+                  className="rounded-xl w-full border-2 border-[#0390A1] bg-[#1C1817] px-4 py-3 font-bold text-sm text-[#D8C8AE]"
+                  style={{ boxShadow: '5px 7px #0390A1', fontFamily: 'var(--font-jersey-25)' }}
+                />
+                <button
+                  type="button"
+                  onClick={handleCopyJoinUrl}
+                  className="rounded-xl w-32 border-2 border-[#D34F34] bg-[#1C1817] h-12 font-bold text-sm"
+                  style={{ boxShadow: '5px 7px #D34F34', fontFamily: 'var(--font-jersey-25)' }}
+                >
+                  Copy
+                </button>
+                <p
+                  className={`text-sm text-[#7BBB63] min-h-[1.25rem] ${
+                    isJoinUrlCopied ? "opacity-100" : "opacity-0"
+                  }`}
+                  style={{ fontFamily: 'var(--font-jersey-25)' }}
+                  aria-live="polite"
+                >
+                  Copied!
+                </p>
+              </div>
+            </div>
+          )}
+
           {isWaiting ? (
             <p className="text-lg text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-25)' }}>Waiting for opponent to join...</p>
           ) : (
-            <p className="text-lg text-[#0390A1]" style={{ fontFamily: 'var(--font-jersey-25)' }}>Opponent joined! Enter your name to continue.</p>
+            <p className="text-lg text-[#7BBB63]" style={{ fontFamily: 'var(--font-jersey-25)' }}>Opponent joined! Enter your name to continue.</p>
           )}
         </div>
 
