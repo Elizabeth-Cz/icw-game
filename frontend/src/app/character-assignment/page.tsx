@@ -209,7 +209,7 @@ function CharacterAssignmentInner() {
         <button
           onClick={handleContinue}
           disabled={isLoading || !gameState.secretCharacter}
-          className="rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl mt-auto mt-6"
+          className="rounded-xl w-48 border-2 border-[#D34F34] bg-[#1C1817] h-20 font-bold text-xl mt-auto"
           style={{ boxShadow: '5px 7px #D34F34', fontFamily: 'var(--font-jersey-25)' }}
         >
           {isLoading ? "Loading..." : "Continue to Game"}
