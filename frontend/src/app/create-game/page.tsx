@@ -4,6 +4,8 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSocket } from "../../context/SocketContext";
 import { useGame } from "../../context/GameContext";
+import { characterData } from "../../data/characterData";
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from "@headlessui/react";
 
 export default function CreateGame() {
   return (
@@ -144,19 +146,41 @@ function CreateGameInner() {
 
         <form onSubmit={handleSubmitName} className="flex flex-col h-full justify-evenly gap-10" style={{ fontFamily: 'var(--font-jersey-25)' }}>
           <div className="flex flex-col items-center text-xl gap-4">
-            <label htmlFor="name" className="">
-              Your Name
+            <label className="">
+              Your name
             </label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="rounded-xl w-48 border-2 border-[#0390A1] bg-[#1C1817] h-20 font-bold text-xl text-center"
-              style={{ boxShadow: '5px 7px #0390A1' }}
-              maxLength={20}
-              required
-            />
+            <Listbox value={name} onChange={setName}>
+              <div className="relative w-48">
+                <ListboxButton className="rounded-xl w-full border-2 border-[#0390A1] bg-[#1C1817] px-6 py-4 font-bold text-xl text-[#D8C8AE] text-left flex justify-between items-center"
+                  style={{ 
+                    boxShadow: '5px 7px #0390A1',
+                    fontFamily: 'var(--font-jersey-25)'
+                  }}
+                >
+                  <span>{name || "Choose a name"}</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </ListboxButton>
+                <ListboxOptions className="absolute z-10 w-full mt-1 bg-[#1C1817] border-2 border-[#0390A1] rounded-xl shadow-lg max-h-60 overflow-auto"
+                  style={{ fontFamily: 'var(--font-jersey-25)' }}
+                >
+                  {Object.keys(characterData).map((characterName) => (
+                    <ListboxOption
+                      key={characterName}
+                      value={characterName}
+                      className={({ active }) =>
+                        `px-6 py-3 cursor-pointer text-[#D8C8AE] ${
+                          active ? 'bg-[#0390A1] text-[#1C1817]' : ''
+                        } ${name === characterName ? 'bg-[#0390A1] text-[#1C1817]' : ''}`
+                      }
+                    >
+                      {characterName}
+                    </ListboxOption>
+                  ))}
+                </ListboxOptions>
+              </div>
+            </Listbox>
           </div>
 
           <button

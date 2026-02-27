@@ -241,7 +241,7 @@ function GameBoardInner() {
         <div className="mb-6 sm:mb-8">
           {gameState.secretCharacter ? (
             <div className="flex justify-center">
-              <div className="w-32 sm:w-40 border-4 rounded-lg overflow-hidden">
+              <div className="w-32 sm:w-40 rounded-lg overflow-hidden">
                 <CharacterCard
                   character={gameState.secretCharacter}
                   isEliminated={false}
@@ -284,7 +284,7 @@ function GameBoardInner() {
               {characters.map((character) => (
                 <div 
                   key={character.id} 
-                  className={`relative rounded-lg overflow-hidden border-2`}
+                  className={`relative rounded-lg overflow-hidden`}
                 >
                   <CharacterCard
                     character={character}
