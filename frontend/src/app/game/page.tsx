@@ -213,7 +213,7 @@ function GameBoardInner() {
             labelClassName="text-cream-100"
           />
 
-          <div className="bg-gray-800 rounded-lg py-1 px-3 inline-block" style={{ fontFamily: 'var(--font-jersey-25)', letterSpacing: '2px' }}>
+          <div className="bg-gray-800 rounded-lg py-1 px-3 inline-block my-4" style={{ fontFamily: 'var(--font-jersey-25)', letterSpacing: '2px' }}>
             <span className="sm:text-base font-bold text-yellow-400">Room: </span>
             <span className="sm:text-base font-bold text-yellow-400">{roomCode}</span>
           </div>

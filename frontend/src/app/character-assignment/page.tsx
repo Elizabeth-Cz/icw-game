@@ -178,6 +178,11 @@ function CharacterAssignmentInner() {
         iconClassName="mr-1 h-5 w-5"
       />
       <main className="h-full flex flex-col items-center p-8 justify-between">
+        <div className="bg-gray-800 rounded-lg py-1 px-3 inline-block my-4" style={{ fontFamily: 'var(--font-jersey-25)', letterSpacing: '2px' }}>
+          <span className="sm:text-base font-bold text-yellow-400">Room: </span>
+          <span className="sm:text-base font-bold text-yellow-400">{roomCode}</span>
+        </div>
+
         <div className="bg-gray-800 rounded-lg py-2 px-6 inline-block w-64">
           <h1 className="text-4xl font-bold text-[#EAC006]" style={{ fontFamily: 'var(--font-jersey-10)' }}>• Your Character •</h1>
         </div>
