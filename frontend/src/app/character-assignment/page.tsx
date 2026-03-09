@@ -124,16 +124,14 @@ function CharacterAssignmentInner() {
     socket.on("secret_character_assigned", handleSecretCharacterAssigned);
     socket.on("room_error", handleError);
 
-    // Request secret character if we don't have it
-    if (!gameState.secretCharacter && roomCode && gameState.playerId) {
+    // Always request secret character for the current room/player.
+    // This avoids showing a stale character kept in client state from a previous game.
+    if (roomCode && gameState.playerId) {
       console.log('Requesting secret character from assignment page:', { roomCode, playerId: gameState.playerId });
       socket.emit("request_secret_character", {
         roomCode,
         playerId: gameState.playerId,
       });
-    } else if (gameState.secretCharacter) {
-      // If we already have the secret character, no need to load
-      setIsLoading(false);
     }
 
     // Clean up event listeners
@@ -141,7 +139,7 @@ function CharacterAssignmentInner() {
       socket.off("secret_character_assigned", handleSecretCharacterAssigned);
       socket.off("room_error", handleError);
     };
-  }, [socket, roomCode, gameState.playerId, gameState.secretCharacter, setSecretCharacter]);
+  }, [socket, roomCode, gameState.playerId, setSecretCharacter]);
 
   // Retry mechanism for loading character
   useEffect(() => {
