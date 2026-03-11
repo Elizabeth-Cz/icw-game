@@ -68,6 +68,18 @@ function getOrderedCharacters(gameCharacters: Character[], characterOrder: strin
     .filter(char => char !== undefined);
 }
 
+function emitAllCharacters(socket: Socket, characters: Character[]) {
+  socket.emit(SocketEvents.ALL_CHARACTERS, { characters });
+}
+
+function resolveSecretCharacter(roomCode: string, secretCharacterId: string): Character | undefined {
+  const gameCharacters = characterService.getGameCharacters(roomCode);
+  return (
+    gameCharacters.find(char => char.id === secretCharacterId) ||
+    characterService.getCharacterById(secretCharacterId)
+  );
+}
+
 export const setupSocketHandlers = (io: Server) => {
   // Initialize characters on server startup
   characterService.initializeCharacters();
@@ -206,7 +218,7 @@ export const setupSocketHandlers = (io: Server) => {
 
         // Get player's secret character
         const secretCharacter = player.secretCharacterId 
-          ? characterService.getCharacterById(player.secretCharacterId)
+          ? resolveSecretCharacter(room.roomCode, player.secretCharacterId)
           : null;
 
         // Send reconnection success to client
@@ -222,7 +234,7 @@ export const setupSocketHandlers = (io: Server) => {
         if (player.characterOrder && player.characterOrder.length > 0) {
           const gameCharacters = characterService.getGameCharacters(room.roomCode);
           const orderedCharacters = getOrderedCharacters(gameCharacters, player.characterOrder);
-          socket.emit(SocketEvents.ALL_CHARACTERS, { characters: orderedCharacters });
+          emitAllCharacters(socket, orderedCharacters);
         }
 
         // Notify other player that this player has reconnected
@@ -298,15 +310,13 @@ export const setupSocketHandlers = (io: Server) => {
         const room = roomService.getRoom(roomCode);
         if (!room) {
           // If no room is provided or room doesn't exist, send all characters in default order
-          const allCharacters = characterService.getAllCharacters();
-          return socket.emit(SocketEvents.ALL_CHARACTERS, { characters: allCharacters });
+          return emitAllCharacters(socket, characterService.getAllCharacters());
         }
         
         // Find the player
         const player = room.players.find(p => p.playerId === playerId);
         if (!player) {
-          const allCharacters = characterService.getAllCharacters();
-          return socket.emit(SocketEvents.ALL_CHARACTERS, { characters: allCharacters });
+          return emitAllCharacters(socket, characterService.getAllCharacters());
         }
         
         // Get the 20 random characters for this specific game room
@@ -326,9 +336,9 @@ export const setupSocketHandlers = (io: Server) => {
         // Send ordered characters if player has a custom order, otherwise send default order
         if (player.characterOrder) {
           const orderedCharacters = getOrderedCharacters(gameCharacters, player.characterOrder);
-          socket.emit(SocketEvents.ALL_CHARACTERS, { characters: orderedCharacters });
+          emitAllCharacters(socket, orderedCharacters);
         } else {
-          socket.emit(SocketEvents.ALL_CHARACTERS, { characters: gameCharacters });
+          emitAllCharacters(socket, gameCharacters);
         }
       } catch (error) {
         handleError(socket, 'Failed to get characters', error);
@@ -350,16 +360,7 @@ export const setupSocketHandlers = (io: Server) => {
         const player = room.players.find(p => p.playerId === playerId);
         if (!player || !player.secretCharacterId) return;
         
-        // Make sure we have game characters for this room
-        const gameCharacters = characterService.getGameCharacters(roomCode);
-        
-        // First try to find the secret character in the game characters
-        let secretCharacter = gameCharacters.find(char => char.id === player.secretCharacterId);
-        
-        // If not found in game characters, fall back to all characters
-        if (!secretCharacter) {
-          secretCharacter = characterService.getCharacterById(player.secretCharacterId);
-        }
+        const secretCharacter = resolveSecretCharacter(roomCode, player.secretCharacterId);
         
         if (!secretCharacter) return;
         

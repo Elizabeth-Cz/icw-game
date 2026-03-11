@@ -6,6 +6,8 @@ import { useSocket } from "../../context/SocketContext";
 import { useGame, Character } from "../../context/GameContext";
 import CharacterCard from "../../components/CharacterCard";
 import BackButton from "@/components/BackButton";
+import { clearStoredGameSession, getStoredGameSession } from "@/lib/gameSessionStorage";
+import { emitCloseRoom, emitRequestGameData } from "@/lib/gameSocket";
 
 export default function GameBoard() {
   return (
@@ -27,13 +29,11 @@ function GameBoardInner() {
     toggleCharacterElimination,
     setGameStatus,
     setOpponentConnected,
-    resetEliminations,
     setRoomCode,
     setPlayerId
   } = useGame();
   
   const [error, setError] = useState<string | null>(null);
-  const [characters, setCharacters] = useState<Character[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -51,30 +51,33 @@ function GameBoardInner() {
 
   // Ensure we have room code and player ID from localStorage if not in game state
   useEffect(() => {
-    if (!roomCode && localStorage.getItem("roomCode")) {
-      const storedRoomCode = localStorage.getItem("roomCode");
+    const { roomCode: storedRoomCode, playerId: storedPlayerId } = getStoredGameSession();
+
+    if (!roomCode && storedRoomCode) {
       console.log('Retrieved room code from localStorage:', storedRoomCode);
-      setRoomCode(storedRoomCode!);
+      setRoomCode(storedRoomCode);
     }
     
-    if (!gameState.playerId && localStorage.getItem("playerId")) {
-      const storedPlayerId = localStorage.getItem("playerId");
+    if (!gameState.playerId && storedPlayerId) {
       console.log('Retrieved player ID from localStorage:', storedPlayerId);
-      setPlayerId(storedPlayerId!);
+      setPlayerId(storedPlayerId);
     }
   }, [roomCode, gameState.playerId, setRoomCode, setPlayerId]);
   
   // Retry mechanism for loading characters
   useEffect(() => {
     if (!socket || !roomCode || !gameState.playerId) return;
+
+    const activeRoomCode = roomCode;
+    const activePlayerId = gameState.playerId;
     
     // Log current state for debugging
     console.log('Retry mechanism active with state:', {
-      roomCode,
-      playerId: gameState.playerId,
+      roomCode: activeRoomCode,
+      playerId: activePlayerId,
       isLoading,
       retryCount,
-      hasCharacters: characters.length > 0,
+      hasCharacters: gameState.allCharacters.length > 0,
       hasSecretCharacter: !!gameState.secretCharacter
     });
     
@@ -83,22 +86,16 @@ function GameBoardInner() {
       if (isLoading && retryCount < 5) {
         console.log(`Retry attempt ${retryCount + 1} for loading characters`);
         setRetryCount(retryCount + 1);
-        
-        // Request both secret character and all characters again
-        socket.emit("request_secret_character", {
-          roomCode,
-          playerId: gameState.playerId,
-        });
-        
-        socket.emit("get_all_characters", {
-          roomCode,
-          playerId: gameState.playerId
+
+        emitRequestGameData(socket, {
+          roomCode: activeRoomCode,
+          playerId: activePlayerId,
         });
       }
     }, 2000); // Retry every 2 seconds
     
     return () => clearTimeout(retryTimer);
-  }, [socket, roomCode, gameState.playerId, isLoading, retryCount, characters.length, gameState.secretCharacter]);
+  }, [socket, roomCode, gameState.playerId, isLoading, retryCount, gameState.allCharacters.length, gameState.secretCharacter]);
 
   // Listen for socket events
   useEffect(() => {
@@ -110,7 +107,7 @@ function GameBoardInner() {
       setSecretCharacter(character);
       
       // If we now have both secret character and all characters, we're done loading
-      if (characters.length > 0) {
+      if (gameState.allCharacters.length > 0) {
         console.log('Both secret character and all characters loaded');
         setIsLoading(false);
       }
@@ -120,7 +117,6 @@ function GameBoardInner() {
     const handleAllCharactersReceived = ({ characters }: { characters: Character[] }) => {
       console.log('All characters received:', characters.length);
       setAllCharacters(characters);
-      setCharacters(characters);
       
       // If we now have both secret character and all characters, we're done loading
       if (gameState.secretCharacter) {
@@ -167,17 +163,10 @@ function GameBoardInner() {
     // Always request both secret character and all characters on mount
     if (roomCode && gameState.playerId) {
       console.log('Requesting game data with:', { roomCode, playerId: gameState.playerId });
-      
-      // Request secret character
-      socket.emit("request_secret_character", {
+
+      emitRequestGameData(socket, {
         roomCode,
         playerId: gameState.playerId,
-      });
-      
-      // Also request all characters immediately, don't wait for secret character
-      socket.emit("get_all_characters", {
-        roomCode,
-        playerId: gameState.playerId
       });
       
       console.log('Both requests sent');
@@ -203,9 +192,7 @@ function GameBoardInner() {
     if (!showRoomClosedModal) return;
 
     if (redirectCountdown <= 0) {
-      localStorage.removeItem("reconnectToken");
-      localStorage.removeItem("roomCode");
-      localStorage.removeItem("playerId");
+      clearStoredGameSession();
       router.push("/");
       return;
     }
@@ -229,15 +216,13 @@ function GameBoardInner() {
   };
 
   const redirectHome = () => {
-    localStorage.removeItem("reconnectToken");
-    localStorage.removeItem("roomCode");
-    localStorage.removeItem("playerId");
+    clearStoredGameSession();
     router.push("/");
   };
 
   const confirmExitAndCloseRoom = () => {
     if (socket && roomCode && gameState.playerId) {
-      socket.emit("close_room", {
+      emitCloseRoom(socket, {
         roomCode,
         playerId: gameState.playerId,
       });
@@ -310,7 +295,7 @@ function GameBoardInner() {
 
         {/* Character Grid */}
         <div className="rounded-lg bg-gray-900 p-4 sm:p-6 border border-gray-800">
-          {isLoading || characters.length === 0 ? (
+          {isLoading || gameState.allCharacters.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="mb-4 animate-spin rounded-full h-12 w-12 border-t-2"></div>
               <p className="text-gray-400">Loading characters...</p>
@@ -320,7 +305,7 @@ function GameBoardInner() {
             </div>
           ) : (
             <div className="grid grid-cols-4 gap-2 xs:gap-3 sm:grid-cols-4 md:grid-cols-5">
-              {characters.map((character) => (
+              {gameState.allCharacters.map((character) => (
                 <div 
                   key={character.id} 
                   className={`relative rounded-lg overflow-hidden`}
@@ -366,17 +351,17 @@ function GameBoardInner() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
             <div className="w-full max-w-md rounded-xl border-2 border-[#D34F34] bg-[#1C1817] p-6 text-center">
               <p className="mb-2 text-lg text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-25)' }}>
-                The other player has ended the game.
+                The other player closed the room.
               </p>
               <p className="mb-6 text-sm text-[#D8C8AE]/80" style={{ fontFamily: 'var(--font-jersey-25)' }}>
-                Redirecting to home in {redirectCountdown}s
+                You are being redirected to the home page.
               </p>
               <button
                 onClick={closeRoomClosedModalAndRedirect}
                 className="rounded-xl border-2 border-[#D34F34] bg-[#1C1817] px-5 py-2 text-[#D8C8AE]"
                 style={{ boxShadow: '3px 4px #D34F34', fontFamily: 'var(--font-jersey-25)' }}
               >
-                Back to Home Screen
+                OK ({redirectCountdown}s)
               </button>
             </div>
           </div>

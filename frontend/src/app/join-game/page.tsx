@@ -7,6 +7,8 @@ import { useGame } from "../../context/GameContext";
 import { characterData } from "../../data/characterData";
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from "@headlessui/react";
 import BackButton from "@/components/BackButton";
+import { clearStoredGameSession, setStoredGameSession } from "@/lib/gameSessionStorage";
+import { emitSubmitName } from "@/lib/gameSocket";
 
 
 export default function JoinGame() {
@@ -33,15 +35,13 @@ export default function JoinGame() {
       setReconnectToken(reconnectToken);
       
       // Store the data in localStorage for persistence
-      localStorage.setItem("roomCode", roomCode);
-      localStorage.setItem("playerId", playerId);
-      localStorage.setItem("reconnectToken", reconnectToken);
+      setStoredGameSession({ roomCode, playerId, reconnectToken });
       
       setIsLoading(false);
       
       // Submit name immediately
       setPlayerName(name);
-      socket.emit("submit_name", {
+      emitSubmitName(socket, {
         roomCode,
         playerId,
         name,
@@ -93,9 +93,7 @@ export default function JoinGame() {
     setError(null);
     
     // Clear any existing game state to prevent conflicts
-    localStorage.removeItem("reconnectToken");
-    localStorage.removeItem("roomCode");
-    localStorage.removeItem("playerId");
+    clearStoredGameSession();
 
     console.log('Attempting to join room:', roomCodeInput);
     

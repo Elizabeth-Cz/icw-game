@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import { Character } from '../context/GameContext';
-import { characterData, teamBgClass, TeamType } from '../data/characterData';
-import QuestionMarkImage from '../assets/question-mark.png';
+import { characterData, teamBgClass } from '../data/characterData';
 import Logo from './Logo';
 
 interface CharacterCardProps {
@@ -18,24 +17,14 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
   isSecret = false,
   onClick,
 }) => {
-  // Track previous elimination state to apply animation only when it changes
-  const [wasEliminated, setWasEliminated] = useState(isEliminated);
-  const [shouldAnimate, setShouldAnimate] = useState(false);
+  const shouldAnimate = false;
+  const characterMeta = characterData[character.name];
+  const imageSrc = characterMeta?.image;
+  const teamClass = teamBgClass[characterMeta?.team || 'product'];
 
-  // Get image source from our imported images map
-  const getImageSrc = () => {
-    return characterData[character.name]?.image;
-  };
-
-  // Get team for the character
-  const getCharacterTeam = (): TeamType => {
-    return characterData[character.name]?.team || 'product';
-  };
-  
-  // Get background color class based on team
-  const getTeamBgClass = () => {
-    return teamBgClass[getCharacterTeam()];
-  };
+  if (!imageSrc && !isEliminated) {
+    return null;
+  }
 
   return (
     <div className={`rounded-xl xs:rounded-2xl bg-[#D8C8AE] p-[3px] w-full max-w-[180px] ${shouldAnimate ? 'flip-horizontal-bottom' : ''}`}>
@@ -49,9 +38,9 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
           ) : (
             <Image
               unoptimized={true}
-              src={getImageSrc()}
+              src={imageSrc}
               alt={character.name}
-              className={`object-cover h-full w-full ${getTeamBgClass()}`}
+              className={`object-cover h-full w-full ${teamClass}`}
               fill
               sizes="(max-width: 480px) 100px, (max-width: 768px) 140px, 180px"
             />

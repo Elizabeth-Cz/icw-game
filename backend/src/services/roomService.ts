@@ -20,6 +20,18 @@ export interface Room {
 export class RoomService {
   private rooms: Record<string, Room> = {};
 
+  private getRoomOrThrow(roomCode: string): Room {
+    const room = this.getRoom(roomCode);
+    if (!room) throw new Error('Room not found');
+    return room;
+  }
+
+  private getPlayerOrThrow(room: Room, playerId: string): Player {
+    const player = room.players.find(p => p.playerId === playerId);
+    if (!player) throw new Error('Player not found');
+    return player;
+  }
+
   // Generate a random 4-digit room code
   generateRoomCode(): string {
     const min = 1000;
@@ -68,8 +80,7 @@ export class RoomService {
 
   // Add a player to a room
   addPlayerToRoom(roomCode: string, player: Omit<Player, 'connected'>): void {
-    const room = this.getRoom(roomCode);
-    if (!room) throw new Error('Room not found');
+    const room = this.getRoomOrThrow(roomCode);
     if (this.isRoomFull(roomCode)) throw new Error('Room is full');
 
     room.players.push({
@@ -81,11 +92,8 @@ export class RoomService {
 
   // Update a player's name
   updatePlayerName(roomCode: string, playerId: string, name: string): void {
-    const room = this.getRoom(roomCode);
-    if (!room) throw new Error('Room not found');
-
-    const player = room.players.find(p => p.playerId === playerId);
-    if (!player) throw new Error('Player not found');
+    const room = this.getRoomOrThrow(roomCode);
+    const player = this.getPlayerOrThrow(room, playerId);
 
     player.name = name;
     room.lastActivity = new Date();
@@ -102,11 +110,8 @@ export class RoomService {
 
   // Assign a secret character to a player
   assignSecretCharacter(roomCode: string, playerId: string, characterId: string): void {
-    const room = this.getRoom(roomCode);
-    if (!room) throw new Error('Room not found');
-
-    const player = room.players.find(p => p.playerId === playerId);
-    if (!player) throw new Error('Player not found');
+    const room = this.getRoomOrThrow(roomCode);
+    const player = this.getPlayerOrThrow(room, playerId);
 
     player.secretCharacterId = characterId;
     room.lastActivity = new Date();
@@ -114,8 +119,7 @@ export class RoomService {
 
   // Set room status
   setRoomStatus(roomCode: string, status: 'waiting' | 'active'): void {
-    const room = this.getRoom(roomCode);
-    if (!room) throw new Error('Room not found');
+    const room = this.getRoomOrThrow(roomCode);
 
     room.status = status;
     room.lastActivity = new Date();
@@ -137,11 +141,8 @@ export class RoomService {
 
   // Update player's socket ID
   updatePlayerSocketId(roomCode: string, playerId: string, socketId: string): void {
-    const room = this.getRoom(roomCode);
-    if (!room) throw new Error('Room not found');
-
-    const player = room.players.find(p => p.playerId === playerId);
-    if (!player) throw new Error('Player not found');
+    const room = this.getRoomOrThrow(roomCode);
+    const player = this.getPlayerOrThrow(room, playerId);
 
     player.socketId = socketId;
     player.connected = true;
@@ -158,8 +159,7 @@ export class RoomService {
 
   // Remove a player from a room
   removePlayerFromRoom(roomCode: string, playerId: string): void {
-    const room = this.getRoom(roomCode);
-    if (!room) throw new Error('Room not found');
+    const room = this.getRoomOrThrow(roomCode);
 
     room.players = room.players.filter(p => p.playerId !== playerId);
     room.lastActivity = new Date();
@@ -194,11 +194,8 @@ export class RoomService {
 
   // Mark a player as disconnected
   markPlayerDisconnected(roomCode: string, playerId: string): void {
-    const room = this.getRoom(roomCode);
-    if (!room) throw new Error('Room not found');
-
-    const player = room.players.find(p => p.playerId === playerId);
-    if (!player) throw new Error('Player not found');
+    const room = this.getRoomOrThrow(roomCode);
+    const player = this.getPlayerOrThrow(room, playerId);
 
     player.connected = false;
     room.lastActivity = new Date();
@@ -229,8 +226,7 @@ export class RoomService {
   
   // Assign shuffled character orders to players
   assignShuffledCharacterOrders(roomCode: string, characterIds: string[]): void {
-    const room = this.getRoom(roomCode);
-    if (!room) throw new Error('Room not found');
+    const room = this.getRoomOrThrow(roomCode);
     if (room.players.length !== 2) throw new Error('Room must have exactly 2 players');
     
     // Create a shuffled order for player 1

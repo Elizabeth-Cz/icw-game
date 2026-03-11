@@ -1,82 +1,27 @@
 "use client";
 
-import React, { useState, useEffect, useId } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useSocket } from "../context/SocketContext";
 import { useGame } from "../context/GameContext";
-import { getCharacterImagesArray, teamBgClass, TeamType, teamComplementaryColors } from "../data/characterData";
-import QuestionMarkImage from "../assets/question-mark.png";
+import { getCharacterImagesArray, teamBgClass, teamComplementaryColors } from "../data/characterData";
+import { clearStoredGameSession, getStoredGameSession } from "@/lib/gameSessionStorage";
 import Logo from '@/components/Logo';
 
 // Get character images array from shared data
 const characterImages = getCharacterImagesArray();
 
-// Define background colors for the border, grouped by color family
-const colorFamilies = [
-  // Greens
-  ["#237658", "#1A8A70", "#2C9678"],
-  // Yellows/Golds
-  ["#D0B334", "#E6C13D", "#C9A428"],
-  // Reds/Oranges
-  ["#D34F34", "#E05B41", "#C64025"],
-  // Pinks/Purples
-  ["#D084A9", "#C46B97", "#B85F8A"],
-  // Blues
-  ["#27528F", "#3468B0", "#1E4578"],
-  // Teals/Cyans
-  ["#0390A1", "#0AACBF", "#007D8C"]
-];
-
-// Flatten array for backward compatibility
-const bgColors = colorFamilies.flat();
-
-// Function to get a color from a different family than the previous one
-const getDistinctColor = (prevColorIndex: number): string => {
-  // Determine which family the previous color belongs to
-  const prevFamilyIndex = Math.floor(prevColorIndex / 3);
-  
-  // Select a different family
-  let newFamilyIndex;
-  do {
-    newFamilyIndex = Math.floor(Math.random() * colorFamilies.length);
-  } while (newFamilyIndex === prevFamilyIndex);
-  
-  // Select a random color from the new family
-  const selectedFamily = colorFamilies[newFamilyIndex];
-  const colorInFamily = Math.floor(Math.random() * selectedFamily.length);
-  
-  // Return the absolute index in the flattened array
-  return bgColors[newFamilyIndex * 3 + colorInFamily];
-};
-
 // Main menu component
 export default function Home() {
   const router = useRouter();
   const { socket, connected } = useSocket();
-  const { gameState, setRoomCode, setPlayerId, setReconnectToken } = useGame();
+  const { setRoomCode, setPlayerId, setReconnectToken } = useGame();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rotationOffset, setRotationOffset] = useState(0); // Track the current rotation position
   const [isAnimationEnabled, setIsAnimationEnabled] = useState(true); // Toggle for animation
   const [isMouseDown, setIsMouseDown] = useState(false); // Track if mouse is being held down
-  // Initialize with static colors first to avoid hydration mismatch
-  const [frameColors, setFrameColors] = useState<string[]>(() => {
-    // Start with a static pattern for initial render to avoid hydration errors
-    const initialColors: string[] = [];
-    
-    for (let i = 0; i < 24; i++) {
-      // Use a deterministic pattern based on position
-      const familyIndex = i % colorFamilies.length;
-      const colorIndex = Math.floor(i / colorFamilies.length) % 3;
-      initialColors.push(colorFamilies[familyIndex][colorIndex]);
-    }
-    
-    return initialColors;
-  });
-  
-  // Flag to track if we're on client side
-  const [isClient, setIsClient] = useState(false);
 
   // Expose animation toggle to window object for programmatic control
   useEffect(() => {
@@ -110,10 +55,7 @@ export default function Home() {
     };
   }, [isAnimationEnabled]);
 
-  // Set isClient to true once component mounts (client-side only)
   useEffect(() => {
-    setIsClient(true);
-    
     // Add event listeners for mouse events
     const handleMouseDown = () => setIsMouseDown(true);
     const handleMouseUp = () => setIsMouseDown(false);
@@ -150,9 +92,7 @@ export default function Home() {
     const clearInvalidTokenTimeout = setTimeout(() => {
       if (error && error.includes("Invalid reconnect token")) {
         // If we got an invalid token error, clear all stored tokens
-        localStorage.removeItem("reconnectToken");
-        localStorage.removeItem("roomCode");
-        localStorage.removeItem("playerId");
+        clearStoredGameSession();
         setError(null);
       }
     }, 1000);
@@ -172,9 +112,7 @@ export default function Home() {
     }
 
     // Check if we have a valid token before attempting reconnection
-    const reconnectToken = localStorage.getItem("reconnectToken");
-    const roomCode = localStorage.getItem("roomCode");
-    const playerId = localStorage.getItem("playerId");
+    const { reconnectToken, roomCode, playerId } = getStoredGameSession();
 
     // Only attempt reconnection if we have ALL required pieces of information
     if (reconnectToken && roomCode && playerId && socket && connected) {
@@ -184,9 +122,7 @@ export default function Home() {
     } else if (reconnectToken && (!roomCode || !playerId)) {
       // If we have a token but missing other required data, clear everything
       console.log('Found incomplete game data, clearing storage');
-      localStorage.removeItem("reconnectToken");
-      localStorage.removeItem("roomCode");
-      localStorage.removeItem("playerId");
+      clearStoredGameSession();
     }
 
     return () => clearTimeout(clearInvalidTokenTimeout);
@@ -198,19 +134,8 @@ export default function Home() {
     if (!isAnimationEnabled || isMouseDown) return;
     
     const animationInterval = setInterval(() => {
-      // Shift both characters and colors one position to the right
+      // Shift characters one position to the right
       setRotationOffset(prev => (prev + 1) % characterImages.length);
-      
-      // Shift frame colors one position to the right (last color moves to first)
-      setFrameColors(prev => {
-        if (prev.length === 0) return prev;
-        const newColors = [...prev];
-        const lastColor = newColors.pop();
-        if (lastColor) {
-          newColors.unshift(lastColor);
-        }
-        return newColors;
-      });
     }, 300);
     
     return () => clearInterval(animationInterval);
@@ -245,9 +170,7 @@ export default function Home() {
       // If we get an invalid reconnect token error, clear the token from localStorage
       if (message && message.includes('Invalid reconnect token')) {
         console.log('Clearing invalid reconnect token');
-        localStorage.removeItem('reconnectToken');
-        localStorage.removeItem('roomCode');
-        localStorage.removeItem('playerId');
+        clearStoredGameSession();
       }
     };
 
@@ -274,9 +197,7 @@ export default function Home() {
     }
 
     // Clear all game state from localStorage when creating a new game
-    localStorage.removeItem("reconnectToken");
-    localStorage.removeItem("roomCode");
-    localStorage.removeItem("playerId");
+    clearStoredGameSession();
 
     // Set a flag to indicate this is a fresh start
     // This prevents reconnection attempts on page refresh
@@ -295,9 +216,7 @@ export default function Home() {
   // Handle join game button click
   const handleJoinGame = () => {
     // Clear all game state from localStorage when joining a new game
-    localStorage.removeItem("reconnectToken");
-    localStorage.removeItem("roomCode");
-    localStorage.removeItem("playerId");
+    clearStoredGameSession();
 
     // Set a flag to indicate this is a fresh start
     // This prevents reconnection attempts on page refresh

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { getStoredGameSession, setStoredGameSession } from '@/lib/gameSessionStorage';
 
 const getEliminatedCardsStorageKey = (roomCode: string, playerId: string, secretCharacterId: string) =>
   `eliminatedCharacterIds:${roomCode}:${playerId}:${secretCharacterId}`;
@@ -81,40 +82,26 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load game state from localStorage on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('reconnectToken');
-    const storedRoomCode = localStorage.getItem('roomCode');
-    const storedPlayerId = localStorage.getItem('playerId');
+    const { reconnectToken, roomCode, playerId } = getStoredGameSession();
     
-    if (storedToken || storedRoomCode || storedPlayerId) {
+    if (reconnectToken || roomCode || playerId) {
       setGameState(prev => ({
         ...prev,
-        reconnectToken: storedToken || prev.reconnectToken,
-        roomCode: storedRoomCode || prev.roomCode,
-        playerId: storedPlayerId || prev.playerId
+        reconnectToken: reconnectToken || prev.reconnectToken,
+        roomCode: roomCode || prev.roomCode,
+        playerId: playerId || prev.playerId
       }));
     }
   }, []);
 
-  // Save game state to localStorage when it changes
+  // Save game session state to localStorage when it changes
   useEffect(() => {
-    if (gameState.reconnectToken) {
-      localStorage.setItem('reconnectToken', gameState.reconnectToken);
-    }
-  }, [gameState.reconnectToken]);
-  
-  // Save roomCode to localStorage when it changes
-  useEffect(() => {
-    if (gameState.roomCode) {
-      localStorage.setItem('roomCode', gameState.roomCode);
-    }
-  }, [gameState.roomCode]);
-  
-  // Save playerId to localStorage when it changes
-  useEffect(() => {
-    if (gameState.playerId) {
-      localStorage.setItem('playerId', gameState.playerId);
-    }
-  }, [gameState.playerId]);
+    setStoredGameSession({
+      reconnectToken: gameState.reconnectToken,
+      roomCode: gameState.roomCode,
+      playerId: gameState.playerId,
+    });
+  }, [gameState.reconnectToken, gameState.roomCode, gameState.playerId]);
 
   // Rehydrate eliminated cards for the active player/room/secret character
   useEffect(() => {
