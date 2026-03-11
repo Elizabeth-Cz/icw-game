@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSocket } from "../../context/SocketContext";
 import { useGame } from "../../context/GameContext";
 import BackButton from "@/components/BackButton";
+import { emitLeaveRoom, emitSubmitName } from "@/lib/gameSocket";
 
 export default function EnterName() {
   return (
@@ -71,7 +72,7 @@ function EnterNameInner() {
     }
 
     setPlayerName(name);
-    socket.emit("submit_name", {
+    emitSubmitName(socket, {
       roomCode,
       playerId: gameState.playerId,
       name,
@@ -81,7 +82,7 @@ function EnterNameInner() {
   // Handle back button
   const handleBack = () => {
     if (socket && roomCode && gameState.playerId) {
-      socket.emit("leave_room", {
+      emitLeaveRoom(socket, {
         roomCode,
         playerId: gameState.playerId,
       });

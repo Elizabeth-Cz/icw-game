@@ -1,7 +1,10 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useSocket } from './SocketContext';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { getStoredGameSession, setStoredGameSession } from '@/lib/gameSessionStorage';
+
+const getEliminatedCardsStorageKey = (roomCode: string, playerId: string, secretCharacterId: string) =>
+  `eliminatedCharacterIds:${roomCode}:${playerId}:${secretCharacterId}`;
 
 // Character interface
 export interface Character {
@@ -75,44 +78,87 @@ export const useGame = () => useContext(GameContext);
 // Game provider component
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [gameState, setGameState] = useState<GameState>(initialGameState);
-  const { socket } = useSocket();
+  const hydratedEliminationsKeyRef = useRef<string | null>(null);
 
   // Load game state from localStorage on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('reconnectToken');
-    const storedRoomCode = localStorage.getItem('roomCode');
-    const storedPlayerId = localStorage.getItem('playerId');
+    const { reconnectToken, roomCode, playerId } = getStoredGameSession();
     
-    if (storedToken || storedRoomCode || storedPlayerId) {
+    if (reconnectToken || roomCode || playerId) {
       setGameState(prev => ({
         ...prev,
-        reconnectToken: storedToken || prev.reconnectToken,
-        roomCode: storedRoomCode || prev.roomCode,
-        playerId: storedPlayerId || prev.playerId
+        reconnectToken: reconnectToken || prev.reconnectToken,
+        roomCode: roomCode || prev.roomCode,
+        playerId: playerId || prev.playerId
       }));
     }
   }, []);
 
-  // Save game state to localStorage when it changes
+  // Save game session state to localStorage when it changes
   useEffect(() => {
-    if (gameState.reconnectToken) {
-      localStorage.setItem('reconnectToken', gameState.reconnectToken);
-    }
-  }, [gameState.reconnectToken]);
-  
-  // Save roomCode to localStorage when it changes
+    setStoredGameSession({
+      reconnectToken: gameState.reconnectToken,
+      roomCode: gameState.roomCode,
+      playerId: gameState.playerId,
+    });
+  }, [gameState.reconnectToken, gameState.roomCode, gameState.playerId]);
+
+  // Rehydrate eliminated cards for the active player/room/secret character
   useEffect(() => {
-    if (gameState.roomCode) {
-      localStorage.setItem('roomCode', gameState.roomCode);
+    const { roomCode, playerId, secretCharacter } = gameState;
+
+    if (!roomCode || !playerId || !secretCharacter?.id) {
+      hydratedEliminationsKeyRef.current = null;
+      setGameState(prev => ({ ...prev, eliminatedCharacterIds: [] }));
+      return;
     }
-  }, [gameState.roomCode]);
-  
-  // Save playerId to localStorage when it changes
+
+    const storageKey = getEliminatedCardsStorageKey(roomCode, playerId, secretCharacter.id);
+    const storedEliminations = localStorage.getItem(storageKey);
+
+    if (!storedEliminations) {
+      setGameState(prev => ({ ...prev, eliminatedCharacterIds: [] }));
+      hydratedEliminationsKeyRef.current = storageKey;
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(storedEliminations);
+      const eliminatedIds = Array.isArray(parsed)
+        ? parsed.filter((id): id is string => typeof id === 'string')
+        : [];
+
+      setGameState(prev => ({ ...prev, eliminatedCharacterIds: eliminatedIds }));
+    } catch (error) {
+      console.error('Failed to parse persisted eliminated cards:', error);
+      setGameState(prev => ({ ...prev, eliminatedCharacterIds: [] }));
+    }
+
+    hydratedEliminationsKeyRef.current = storageKey;
+  }, [gameState.roomCode, gameState.playerId, gameState.secretCharacter?.id]);
+
+  // Persist eliminated cards for the active player/room/secret character
   useEffect(() => {
-    if (gameState.playerId) {
-      localStorage.setItem('playerId', gameState.playerId);
+    const { roomCode, playerId, secretCharacter, eliminatedCharacterIds } = gameState;
+
+    if (!roomCode || !playerId || !secretCharacter?.id) {
+      return;
     }
-  }, [gameState.playerId]);
+
+    const storageKey = getEliminatedCardsStorageKey(roomCode, playerId, secretCharacter.id);
+
+    // Avoid writing before initial hydration for the active key completes
+    if (hydratedEliminationsKeyRef.current !== storageKey) {
+      return;
+    }
+
+    localStorage.setItem(storageKey, JSON.stringify(eliminatedCharacterIds));
+  }, [
+    gameState.roomCode,
+    gameState.playerId,
+    gameState.secretCharacter?.id,
+    gameState.eliminatedCharacterIds,
+  ]);
 
   // Set room code
   const setRoomCode = (code: string) => {

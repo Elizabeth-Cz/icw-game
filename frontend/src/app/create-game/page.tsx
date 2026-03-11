@@ -7,6 +7,7 @@ import { useGame } from "../../context/GameContext";
 import { characterData } from "../../data/characterData";
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from "@headlessui/react";
 import BackButton from "@/components/BackButton";
+import { emitLeaveRoom, emitSubmitName } from "@/lib/gameSocket";
 
 export default function CreateGame() {
   return (
@@ -54,13 +55,6 @@ function CreateGameInner() {
     socket.on("both_players_joined", handleBothPlayersJoined);
     socket.on("room_error", handleError);
 
-    // Store room code and player ID in localStorage when component mounts
-    if (roomCode && gameState.playerId) {
-      console.log('Storing room data in localStorage:', { roomCode, playerId: gameState.playerId });
-      localStorage.setItem("roomCode", roomCode);
-      localStorage.setItem("playerId", gameState.playerId);
-    }
-
     // Clean up event listeners
     return () => {
       socket.off("both_players_joined", handleBothPlayersJoined);
@@ -83,7 +77,7 @@ function CreateGameInner() {
     }
 
     setPlayerName(name);
-    socket.emit("submit_name", {
+    emitSubmitName(socket, {
       roomCode,
       playerId: gameState.playerId,
       name,
@@ -96,7 +90,7 @@ function CreateGameInner() {
   // Handle back button
   const handleBack = () => {
     if (socket && roomCode && gameState.playerId) {
-      socket.emit("leave_room", {
+      emitLeaveRoom(socket, {
         roomCode,
         playerId: gameState.playerId,
       });

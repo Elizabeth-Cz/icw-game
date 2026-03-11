@@ -4,40 +4,6 @@ import React, { useState } from 'react';
 import CharacterCard from '../../components/CharacterCard';
 import { Character } from '../../context/GameContext';
 
-// Import all character images dynamically
-import AlexImage from "../../assets/Alex.png";
-import AnnaImage from "../../assets/Anna.png";
-import BrianImage from "../../assets/Brian.png";
-import DavidImage from "../../assets/David.png";
-import DiogoImage from "../../assets/Diogo.png";
-import DriesImage from "../../assets/Dries.png";
-import ElouanImage from "../../assets/Elouan.png";
-import FrankImage from "../../assets/Frank.png";
-import GiriImage from "../../assets/Giri.png";
-import HiteshImage from "../../assets/Hitesh.png";
-import IvanImage from "../../assets/Ivan.png";
-import IvanaImage from "../../assets/Ivana.png";
-import JeeshanImage from "../../assets/Jeeshan.png";
-import JesseImage from "../../assets/Jesse.png";
-import JosImage from "../../assets/Jos.png";
-import KarlImage from "../../assets/Karl.png";
-import KevinImage from "../../assets/Kevin.png";
-import LinhImage from "../../assets/Linh.png";
-import LizImage from "../../assets/Liz.png";
-import LouiseImage from "../../assets/Louise.png";
-import LucImage from "../../assets/Luc.png";
-import MariaImage from "../../assets/Maria.png";
-import MichielImage from "../../assets/Michiel.png";
-import MikeImage from "../../assets/Mike.png";
-import NickImage from "../../assets/Nick.png";
-import RalphImage from "../../assets/Ralph.png";
-import SidImage from "../../assets/Sid.png";
-import TarekImage from "../../assets/Tarek.png";
-import TissamImage from "../../assets/Tissam.png";
-import TonnyImage from "../../assets/Tonny.png";
-import WalaImage from "../../assets/Wala.png";
-import KennyImage from "../../assets/Kenny.png";
-
 // Create an array of all characters
 const allCharacters: Character[] = [
   { id: '1', name: 'Alex', avatarUrl: '' },
@@ -75,15 +41,8 @@ const allCharacters: Character[] = [
 ];
 
 export default function CharacterGallery() {
-  const [showEliminated, setShowEliminated] = useState(false);
+  const [showEliminated] = useState(false);
   const [toggleIndividual, setToggleIndividual] = useState<Record<string, boolean>>({});
-
-  // Toggle all characters between eliminated and non-eliminated
-  const toggleAll = () => {
-    setShowEliminated(!showEliminated);
-    // Reset individual toggles when changing all
-    setToggleIndividual({});
-  };
 
   // Toggle individual character's eliminated state
   const toggleCharacter = (id: string) => {

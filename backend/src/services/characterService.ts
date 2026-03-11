@@ -34,6 +34,12 @@ export class CharacterService {
   // Number of characters to display in each game
   private readonly GAME_CHARACTERS_COUNT = 20;
 
+  private ensureCharactersInitialized(): void {
+    if (this.characters.length === 0) {
+      this.initializeCharacters();
+    }
+  }
+
   // Initialize all possible characters
   initializeCharacters(): void {
     this.characters = [];
@@ -55,9 +61,7 @@ export class CharacterService {
     }
 
     // Make sure all characters are initialized
-    if (this.characters.length === 0) {
-      this.initializeCharacters();
-    }
+    this.ensureCharactersInitialized();
 
     // Randomly select 20 characters from the full set
     const shuffled = [...this.characters].sort(() => 0.5 - Math.random());
@@ -88,18 +92,14 @@ export class CharacterService {
   // Get all characters
   getAllCharacters(): Character[] {
     // Make sure all characters are initialized
-    if (this.characters.length === 0) {
-      this.initializeCharacters();
-    }
+    this.ensureCharactersInitialized();
     return this.characters;
   }
 
   // Get a character by ID
   getCharacterById(characterId: string): Character | undefined {
     // Make sure all characters are initialized
-    if (this.characters.length === 0) {
-      this.initializeCharacters();
-    }
+    this.ensureCharactersInitialized();
     return this.characters.find(char => char.id === characterId);
   }
 }

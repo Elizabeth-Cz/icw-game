@@ -1,0 +1,341 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.setupSocketHandlers = exports.SocketEvents = void 0;
+const roomService_1 = require("../services/roomService");
+const characterService_1 = require("../services/characterService");
+// Function to generate random IDs (replacement for uuid)
+function generateId() {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+// Initialize services
+const roomService = new roomService_1.RoomService();
+const characterService = new characterService_1.CharacterService();
+// Socket event types
+var SocketEvents;
+(function (SocketEvents) {
+    SocketEvents["CREATE_ROOM"] = "create_room";
+    SocketEvents["ROOM_CREATED"] = "room_created";
+    SocketEvents["JOIN_ROOM"] = "join_room";
+    SocketEvents["ROOM_JOINED"] = "room_joined";
+    SocketEvents["BOTH_PLAYERS_JOINED"] = "both_players_joined";
+    SocketEvents["SUBMIT_NAME"] = "submit_name";
+    SocketEvents["SECRET_CHARACTER_ASSIGNED"] = "secret_character_assigned";
+    SocketEvents["ROOM_ERROR"] = "room_error";
+    SocketEvents["PLAYER_DISCONNECTED"] = "player_disconnected";
+    SocketEvents["REQUEST_RECONNECT"] = "request_reconnect";
+    SocketEvents["RECONNECT_SUCCESS"] = "reconnect_success";
+    SocketEvents["CLOSE_ROOM"] = "close_room";
+    SocketEvents["ROOM_CLOSED"] = "room_closed";
+    SocketEvents["LEAVE_ROOM"] = "leave_room";
+    SocketEvents["GET_ALL_CHARACTERS"] = "get_all_characters";
+    SocketEvents["ALL_CHARACTERS"] = "all_characters";
+    SocketEvents["REQUEST_SECRET_CHARACTER"] = "request_secret_character";
+    SocketEvents["CHARACTER_ORDER"] = "character_order";
+})(SocketEvents || (exports.SocketEvents = SocketEvents = {}));
+// Helper functions
+function handleError(socket, message, error) {
+    if (error)
+        console.error(`${message}:`, error);
+    socket.emit(SocketEvents.ROOM_ERROR, { message });
+}
+function assignCharactersToPlayers(io, roomCode, playersNeedingCharacters, gameCharacters) {
+    if (playersNeedingCharacters.length === 0)
+        return;
+    const availableCharacters = [...gameCharacters];
+    const secretCharacters = availableCharacters
+        .sort(() => 0.5 - Math.random())
+        .slice(0, playersNeedingCharacters.length);
+    playersNeedingCharacters.forEach((player, index) => {
+        const secretCharacter = secretCharacters[index];
+        roomService.assignSecretCharacter(roomCode, player.playerId, secretCharacter.id);
+        io.to(player.socketId).emit(SocketEvents.SECRET_CHARACTER_ASSIGNED, {
+            character: secretCharacter,
+        });
+    });
+}
+function getOrderedCharacters(gameCharacters, characterOrder) {
+    const characterMap = gameCharacters.reduce((map, char) => {
+        map[char.id] = char;
+        return map;
+    }, {});
+    return characterOrder
+        .map(id => characterMap[id])
+        .filter(char => char !== undefined);
+}
+function emitAllCharacters(socket, characters) {
+    socket.emit(SocketEvents.ALL_CHARACTERS, { characters });
+}
+function resolveSecretCharacter(roomCode, secretCharacterId) {
+    const gameCharacters = characterService.getGameCharacters(roomCode);
+    return (gameCharacters.find(char => char.id === secretCharacterId) ||
+        characterService.getCharacterById(secretCharacterId));
+}
+const setupSocketHandlers = (io) => {
+    // Initialize characters on server startup
+    characterService.initializeCharacters();
+    // Set up room cleanup interval (check every minute, remove rooms inactive for 5 minutes)
+    const CLEANUP_INTERVAL_MS = 60 * 1000; // 1 minute
+    const ROOM_TIMEOUT_MINUTES = 5; // 5 minutes
+    setInterval(() => {
+        roomService.cleanupInactiveRooms(ROOM_TIMEOUT_MINUTES);
+    }, CLEANUP_INTERVAL_MS);
+    io.on('connection', (socket) => {
+        console.log(`User connected: ${socket.id}`);
+        // Create a new room
+        socket.on(SocketEvents.CREATE_ROOM, () => {
+            try {
+                const roomCode = roomService.generateRoomCode();
+                const playerId = generateId();
+                const reconnectToken = generateId();
+                // Create room with host player
+                roomService.createRoom(roomCode, {
+                    playerId,
+                    socketId: socket.id,
+                    reconnectToken,
+                });
+                // Join socket to room
+                socket.join(roomCode);
+                // Send room code and reconnect token to client
+                socket.emit(SocketEvents.ROOM_CREATED, {
+                    roomCode,
+                    playerId,
+                    reconnectToken,
+                });
+            }
+            catch (error) {
+                handleError(socket, 'Failed to create room', error);
+            }
+        });
+        // Join an existing room
+        socket.on(SocketEvents.JOIN_ROOM, ({ roomCode }) => {
+            try {
+                // Check if room exists
+                if (!roomService.roomExists(roomCode)) {
+                    return handleError(socket, 'Room does not exist');
+                }
+                // Check if room is full
+                if (roomService.isRoomFull(roomCode)) {
+                    return handleError(socket, 'Room is full');
+                }
+                const playerId = generateId();
+                const reconnectToken = generateId();
+                // Add player to room
+                roomService.addPlayerToRoom(roomCode, {
+                    playerId,
+                    socketId: socket.id,
+                    reconnectToken,
+                });
+                // Join socket to room
+                socket.join(roomCode);
+                // Send room info to client
+                socket.emit(SocketEvents.ROOM_JOINED, {
+                    roomCode,
+                    playerId,
+                    reconnectToken,
+                });
+                // Notify all players in the room that both players have joined
+                io.to(roomCode).emit(SocketEvents.BOTH_PLAYERS_JOINED);
+            }
+            catch (error) {
+                handleError(socket, 'Failed to join room', error);
+            }
+        });
+        // Submit player name
+        socket.on(SocketEvents.SUBMIT_NAME, ({ roomCode, playerId, name }) => {
+            try {
+                // Update player name
+                roomService.updatePlayerName(roomCode, playerId, name);
+                // Check if both players have submitted names
+                if (roomService.bothPlayersHaveNames(roomCode)) {
+                    // Set room status to active
+                    roomService.setRoomStatus(roomCode, 'active');
+                    // Get room
+                    const room = roomService.getRoom(roomCode);
+                    if (!room)
+                        return;
+                    // Select 20 random characters for this game room if not already selected
+                    const gameCharacters = characterService.getGameCharacters(roomCode);
+                    // Track which players need character assignment
+                    const playersNeedingCharacters = room.players.filter(player => !player.secretCharacterId);
+                    // Assign characters to players who need them
+                    assignCharactersToPlayers(io, roomCode, playersNeedingCharacters, gameCharacters);
+                    // Get game character IDs for shuffling
+                    const characterIds = gameCharacters.map(char => char.id);
+                    // Create shuffled orders for players who don't have them yet
+                    if (!room.players[0].characterOrder || !room.players[1].characterOrder) {
+                        roomService.assignShuffledCharacterOrders(roomCode, characterIds);
+                    }
+                }
+            }
+            catch (error) {
+                handleError(socket, 'Failed to submit name', error);
+            }
+        });
+        // Request reconnection
+        socket.on(SocketEvents.REQUEST_RECONNECT, ({ reconnectToken }) => {
+            try {
+                // Find room and player by reconnect token
+                const { room, player } = roomService.findPlayerByReconnectToken(reconnectToken);
+                if (!room || !player) {
+                    return handleError(socket, 'Invalid reconnect token');
+                }
+                // Update player's socket ID and mark as connected
+                roomService.updatePlayerSocketId(room.roomCode, player.playerId, socket.id);
+                // Join socket to room
+                socket.join(room.roomCode);
+                // Get player's secret character
+                const secretCharacter = player.secretCharacterId
+                    ? resolveSecretCharacter(room.roomCode, player.secretCharacterId)
+                    : null;
+                // Send reconnection success to client
+                socket.emit(SocketEvents.RECONNECT_SUCCESS, {
+                    roomCode: room.roomCode,
+                    playerId: player.playerId,
+                    name: player.name,
+                    character: secretCharacter,
+                    roomStatus: room.status,
+                });
+                // If the player has a character order, send ordered characters
+                if (player.characterOrder && player.characterOrder.length > 0) {
+                    const gameCharacters = characterService.getGameCharacters(room.roomCode);
+                    const orderedCharacters = getOrderedCharacters(gameCharacters, player.characterOrder);
+                    emitAllCharacters(socket, orderedCharacters);
+                }
+                // Notify other player that this player has reconnected
+                socket.to(room.roomCode).emit('player_reconnected');
+                // Update room's last activity timestamp
+                room.lastActivity = new Date();
+            }
+            catch (error) {
+                handleError(socket, 'Failed to reconnect', error);
+            }
+        });
+        // Play Again functionality removed
+        // Close room for both players
+        socket.on(SocketEvents.CLOSE_ROOM, ({ roomCode, playerId }) => {
+            try {
+                const room = roomService.getRoom(roomCode);
+                if (!room) {
+                    return;
+                }
+                const closingPlayer = room.players.find(p => p.playerId === playerId);
+                io.to(roomCode).emit(SocketEvents.ROOM_CLOSED, {
+                    roomCode,
+                    closedByPlayerId: playerId,
+                    closedByName: (closingPlayer === null || closingPlayer === void 0 ? void 0 : closingPlayer.name) || null,
+                });
+                room.players.forEach(player => {
+                    const playerSocket = io.sockets.sockets.get(player.socketId);
+                    if (playerSocket) {
+                        playerSocket.leave(roomCode);
+                    }
+                });
+                roomService.deleteRoom(roomCode);
+                characterService.clearGameCharacters(roomCode);
+            }
+            catch (error) {
+                handleError(socket, 'Failed to close room', error);
+            }
+        });
+        // Leave room
+        socket.on(SocketEvents.LEAVE_ROOM, ({ roomCode, playerId }) => {
+            try {
+                // Remove player from room
+                roomService.removePlayerFromRoom(roomCode, playerId);
+                // Leave socket room
+                socket.leave(roomCode);
+                // Check if room is empty and delete if needed
+                if (roomService.isRoomEmpty(roomCode)) {
+                    roomService.deleteRoom(roomCode);
+                    // Clear game characters when room is deleted
+                    characterService.clearGameCharacters(roomCode);
+                }
+                else {
+                    // Notify other player that this player has left
+                    socket.to(roomCode).emit(SocketEvents.PLAYER_DISCONNECTED);
+                }
+            }
+            catch (error) {
+                // Just log the error, no need to send to client as they're leaving
+                console.error('Error leaving room:', error);
+            }
+        });
+        // Get all characters for a specific game room
+        socket.on(SocketEvents.GET_ALL_CHARACTERS, ({ roomCode, playerId }) => {
+            try {
+                // Get the room and player
+                const room = roomService.getRoom(roomCode);
+                if (!room) {
+                    // If no room is provided or room doesn't exist, send all characters in default order
+                    return emitAllCharacters(socket, characterService.getAllCharacters());
+                }
+                // Find the player
+                const player = room.players.find(p => p.playerId === playerId);
+                if (!player) {
+                    return emitAllCharacters(socket, characterService.getAllCharacters());
+                }
+                // Get the 20 random characters for this specific game room
+                const gameCharacters = characterService.getGameCharacters(roomCode);
+                // If this is the first time getting characters, create and assign shuffled orders
+                if (!player.characterOrder) {
+                    // Get game character IDs
+                    const characterIds = gameCharacters.map(char => char.id);
+                    // Assign shuffled orders to both players if not already assigned
+                    if (!room.players.some(p => p.characterOrder)) {
+                        roomService.assignShuffledCharacterOrders(roomCode, characterIds);
+                    }
+                }
+                // Send ordered characters if player has a custom order, otherwise send default order
+                if (player.characterOrder) {
+                    const orderedCharacters = getOrderedCharacters(gameCharacters, player.characterOrder);
+                    emitAllCharacters(socket, orderedCharacters);
+                }
+                else {
+                    emitAllCharacters(socket, gameCharacters);
+                }
+            }
+            catch (error) {
+                handleError(socket, 'Failed to get characters', error);
+            }
+        });
+        // Request secret character (for reconnection)
+        socket.on(SocketEvents.REQUEST_SECRET_CHARACTER, ({ roomCode, playerId }) => {
+            try {
+                // Verify player is in the room
+                if (!roomService.isPlayerInRoom(roomCode, playerId)) {
+                    return handleError(socket, 'Player not in room');
+                }
+                // Get player's secret character
+                const room = roomService.getRoom(roomCode);
+                if (!room)
+                    return;
+                const player = room.players.find(p => p.playerId === playerId);
+                if (!player || !player.secretCharacterId)
+                    return;
+                const secretCharacter = resolveSecretCharacter(roomCode, player.secretCharacterId);
+                if (!secretCharacter)
+                    return;
+                // Send secret character to player
+                socket.emit(SocketEvents.SECRET_CHARACTER_ASSIGNED, {
+                    character: secretCharacter,
+                });
+            }
+            catch (error) {
+                handleError(socket, 'Failed to get secret character', error);
+            }
+        });
+        // Handle disconnection
+        socket.on('disconnect', () => {
+            console.log(`User disconnected: ${socket.id}`);
+            // Find rooms where this socket is a player
+            const roomsWithPlayer = roomService.findRoomsBySocketId(socket.id);
+            roomsWithPlayer.forEach(({ room, player }) => {
+                // Don't remove player, just mark as disconnected for potential reconnection
+                roomService.markPlayerDisconnected(room.roomCode, player.playerId);
+                // Notify other players in the room
+                socket.to(room.roomCode).emit(SocketEvents.PLAYER_DISCONNECTED);
+            });
+        });
+    });
+};
+exports.setupSocketHandlers = setupSocketHandlers;

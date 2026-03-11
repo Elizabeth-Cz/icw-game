@@ -37,15 +37,17 @@ const isAllowedOrigin = (origin?: string) => {
   }
 };
 
+const validateCorsOrigin = (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+  if (isAllowedOrigin(origin)) {
+    callback(null, true);
+  } else {
+    callback(new Error('Not allowed by CORS'));
+  }
+};
+
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (isAllowedOrigin(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: validateCorsOrigin,
     credentials: true,
   }),
 );
@@ -56,13 +58,7 @@ app.use(express.json());
 // Create Socket.io server
 const io = new Server(server, {
   cors: {
-    origin: (origin, callback) => {
-      if (isAllowedOrigin(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: validateCorsOrigin,
     methods: ['GET', 'POST'],
     credentials: true,
   },
