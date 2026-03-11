@@ -24,6 +24,8 @@ export enum SocketEvents {
   PLAYER_DISCONNECTED = 'player_disconnected',
   REQUEST_RECONNECT = 'request_reconnect',
   RECONNECT_SUCCESS = 'reconnect_success',
+  CLOSE_ROOM = 'close_room',
+  ROOM_CLOSED = 'room_closed',
   LEAVE_ROOM = 'leave_room',
   GET_ALL_CHARACTERS = 'get_all_characters',
   ALL_CHARACTERS = 'all_characters',
@@ -234,6 +236,36 @@ export const setupSocketHandlers = (io: Server) => {
     });
 
     // Play Again functionality removed
+
+    // Close room for both players
+    socket.on(SocketEvents.CLOSE_ROOM, ({ roomCode, playerId }) => {
+      try {
+        const room = roomService.getRoom(roomCode);
+        if (!room) {
+          return;
+        }
+
+        const closingPlayer = room.players.find(p => p.playerId === playerId);
+
+        io.to(roomCode).emit(SocketEvents.ROOM_CLOSED, {
+          roomCode,
+          closedByPlayerId: playerId,
+          closedByName: closingPlayer?.name || null,
+        });
+
+        room.players.forEach(player => {
+          const playerSocket = io.sockets.sockets.get(player.socketId);
+          if (playerSocket) {
+            playerSocket.leave(roomCode);
+          }
+        });
+
+        roomService.deleteRoom(roomCode);
+        characterService.clearGameCharacters(roomCode);
+      } catch (error) {
+        handleError(socket, 'Failed to close room', error);
+      }
+    });
 
     // Leave room
     socket.on(SocketEvents.LEAVE_ROOM, ({ roomCode, playerId }) => {

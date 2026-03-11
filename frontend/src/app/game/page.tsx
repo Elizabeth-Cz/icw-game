@@ -36,6 +36,9 @@ function GameBoardInner() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [showRoomClosedModal, setShowRoomClosedModal] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState(5);
 
   // Characters are now loaded from the backend
 
@@ -143,12 +146,23 @@ function GameBoardInner() {
       setError(message);
     };
 
+    // Handle room closed by one of the players
+    const handleRoomClosed = ({ closedByPlayerId }: { roomCode: string; closedByPlayerId: string; closedByName: string | null }) => {
+      if (closedByPlayerId === gameState.playerId) {
+        return;
+      }
+
+      setRedirectCountdown(5);
+      setShowRoomClosedModal(true);
+    };
+
     // Register event listeners
     socket.on("secret_character_assigned", handleSecretCharacterAssigned);
     socket.on("all_characters", handleAllCharactersReceived);
     socket.on("player_disconnected", handlePlayerDisconnected);
     socket.on("player_reconnected", handlePlayerReconnected);
     socket.on("room_error", handleError);
+    socket.on("room_closed", handleRoomClosed);
 
     // Always request both secret character and all characters on mount
     if (roomCode && gameState.playerId) {
@@ -181,8 +195,27 @@ function GameBoardInner() {
       socket.off("player_disconnected", handlePlayerDisconnected);
       socket.off("player_reconnected", handlePlayerReconnected);
       socket.off("room_error", handleError);
+      socket.off("room_closed", handleRoomClosed);
     };
   }, [socket, roomCode, gameState.playerId, gameState.secretCharacter, gameState.allCharacters.length, setSecretCharacter, setAllCharacters, setOpponentConnected, setGameStatus]);
+
+  useEffect(() => {
+    if (!showRoomClosedModal) return;
+
+    if (redirectCountdown <= 0) {
+      localStorage.removeItem("reconnectToken");
+      localStorage.removeItem("roomCode");
+      localStorage.removeItem("playerId");
+      router.push("/");
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setRedirectCountdown(prev => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [showRoomClosedModal, redirectCountdown, router]);
 
   // Handle character click (toggle elimination)
   const handleCharacterClick = (characterId: string) => {
@@ -192,13 +225,30 @@ function GameBoardInner() {
 
   // Handle back to main menu
   const handleBackToMainMenu = () => {
+    setShowExitConfirm(true);
+  };
+
+  const redirectHome = () => {
+    localStorage.removeItem("reconnectToken");
+    localStorage.removeItem("roomCode");
+    localStorage.removeItem("playerId");
+    router.push("/");
+  };
+
+  const confirmExitAndCloseRoom = () => {
     if (socket && roomCode && gameState.playerId) {
-      socket.emit("leave_room", {
+      socket.emit("close_room", {
         roomCode,
         playerId: gameState.playerId,
       });
     }
-    router.push("/");
+    setShowExitConfirm(false);
+    redirectHome();
+  };
+
+  const closeRoomClosedModalAndRedirect = () => {
+    setShowRoomClosedModal(false);
+    redirectHome();
   };
 
   return (
@@ -285,6 +335,52 @@ function GameBoardInner() {
             </div>
           )}
         </div>
+
+        {showExitConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+            <div className="w-full max-w-md rounded-xl border-2 border-[#D34F34] bg-[#1C1817] p-6 text-center">
+              <p className="mb-6 text-lg text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-25)' }}>
+                Exiting this page will end the game for both players.
+              </p>
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={() => setShowExitConfirm(false)}
+                  className="rounded-xl border-2 border-[#0390A1] bg-[#1C1817] px-5 py-2 text-[#D8C8AE]"
+                  style={{ boxShadow: '3px 4px #0390A1', fontFamily: 'var(--font-jersey-25)' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmExitAndCloseRoom}
+                  className="rounded-xl border-2 border-[#D34F34] bg-[#1C1817] px-5 py-2 text-[#D8C8AE]"
+                  style={{ boxShadow: '3px 4px #D34F34', fontFamily: 'var(--font-jersey-25)' }}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showRoomClosedModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+            <div className="w-full max-w-md rounded-xl border-2 border-[#D34F34] bg-[#1C1817] p-6 text-center">
+              <p className="mb-2 text-lg text-[#D8C8AE]" style={{ fontFamily: 'var(--font-jersey-25)' }}>
+                The other player has ended the game.
+              </p>
+              <p className="mb-6 text-sm text-[#D8C8AE]/80" style={{ fontFamily: 'var(--font-jersey-25)' }}>
+                Redirecting to home in {redirectCountdown}s
+              </p>
+              <button
+                onClick={closeRoomClosedModalAndRedirect}
+                className="rounded-xl border-2 border-[#D34F34] bg-[#1C1817] px-5 py-2 text-[#D8C8AE]"
+                style={{ boxShadow: '3px 4px #D34F34', fontFamily: 'var(--font-jersey-25)' }}
+              >
+                Back to Home Screen
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
