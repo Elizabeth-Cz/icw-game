@@ -7,7 +7,7 @@ import { useGame, Character } from "../../context/GameContext";
 import CharacterCard from "../../components/CharacterCard";
 import BackButton from "@/components/BackButton";
 
-const HEARTBEAT_INTERVAL_MS = 90 * 1000;
+const HEARTBEAT_INTERVAL_MS = 5 * 1000;
 
 interface HeartbeatResponse {
   ok: boolean;
@@ -37,7 +37,6 @@ function GameBoardInner() {
     setOpponentConnected,
     setRoomCode,
     setPlayerId,
-    clearGameSession,
   } = useGame();
   
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +90,9 @@ function GameBoardInner() {
 
     const expireGame = (message: string) => {
       sessionStorage.setItem("gameError", message);
-      clearGameSession();
+      localStorage.removeItem("reconnectToken");
+      localStorage.removeItem("roomCode");
+      localStorage.removeItem("playerId");
       router.push("/");
     };
 
@@ -147,7 +148,6 @@ function GameBoardInner() {
     roomCode,
     gameState.playerId,
     isPageVisible,
-    clearGameSession,
     router,
     setGameStatus,
     setOpponentConnected,
