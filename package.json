@@ -1,0 +1,9 @@
+{
+  "name": "icw-gues-game",
+  "private": true,
+  "scripts": {
+    "dev": "./scripts/dev.sh",
+    "dev:backend": "./scripts/dev.sh backend",
+    "dev:frontend": "./scripts/dev.sh frontend"
+  }
+}

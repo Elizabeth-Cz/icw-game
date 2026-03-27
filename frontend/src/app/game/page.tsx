@@ -2,10 +2,18 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSocket } from "../../context/SocketContext";
+import { getSocketServerUrl, useSocket } from "../../context/SocketContext";
 import { useGame, Character } from "../../context/GameContext";
 import CharacterCard from "../../components/CharacterCard";
 import BackButton from "@/components/BackButton";
+
+const HEARTBEAT_INTERVAL_MS = 90 * 1000;
+
+interface HeartbeatResponse {
+  ok: boolean;
+  roomStatus: "waiting" | "active";
+  opponentConnected: boolean;
+}
 
 export default function GameBoard() {
   return (
@@ -27,15 +35,16 @@ function GameBoardInner() {
     toggleCharacterElimination,
     setGameStatus,
     setOpponentConnected,
-    resetEliminations,
     setRoomCode,
-    setPlayerId
+    setPlayerId,
+    clearGameSession,
   } = useGame();
   
   const [error, setError] = useState<string | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [isPageVisible, setIsPageVisible] = useState(true);
 
   // Characters are now loaded from the backend
 
@@ -45,6 +54,19 @@ function GameBoardInner() {
       router.push("/");
     }
   }, [roomCode, router]);
+
+  useEffect(() => {
+    const updateVisibility = () => {
+      setIsPageVisible(document.visibilityState === "visible");
+    };
+
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", updateVisibility);
+    };
+  }, []);
 
   // Ensure we have room code and player ID from localStorage if not in game state
   useEffect(() => {
@@ -60,6 +82,76 @@ function GameBoardInner() {
       setPlayerId(storedPlayerId!);
     }
   }, [roomCode, gameState.playerId, setRoomCode, setPlayerId]);
+
+  useEffect(() => {
+    if (!roomCode || !gameState.playerId || !isPageVisible) return;
+
+    let cancelled = false;
+    const heartbeatUrl = `${getSocketServerUrl().replace(/\/$/, "")}/api/rooms/${roomCode}/heartbeat`;
+
+    const expireGame = (message: string) => {
+      sessionStorage.setItem("gameError", message);
+      clearGameSession();
+      router.push("/");
+    };
+
+    const sendHeartbeat = async () => {
+      try {
+        const response = await fetch(heartbeatUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            playerId: gameState.playerId,
+          }),
+        });
+
+        if (cancelled) return;
+
+        if (response.status === 404 || response.status === 410) {
+          expireGame("Your game expired after 5 minutes of inactivity. Start a new game to continue.");
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(`Heartbeat failed with status ${response.status}`);
+        }
+
+        const data: HeartbeatResponse = await response.json();
+
+        if (cancelled) return;
+
+        setOpponentConnected(data.opponentConnected);
+        setGameStatus(data.opponentConnected ? data.roomStatus : "disconnected");
+        setError(null);
+      } catch (heartbeatError) {
+        if (cancelled) return;
+        console.error("Heartbeat failed:", heartbeatError);
+      }
+    };
+
+    void sendHeartbeat();
+
+    const heartbeatTimer = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void sendHeartbeat();
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(heartbeatTimer);
+    };
+  }, [
+    roomCode,
+    gameState.playerId,
+    isPageVisible,
+    clearGameSession,
+    router,
+    setGameStatus,
+    setOpponentConnected,
+  ]);
   
   // Retry mechanism for loading characters
   useEffect(() => {

@@ -53,54 +53,85 @@ guess-who-icw/
 - Node.js (v16 or higher)
 - npm or yarn
 
-### Backend Setup
+### Install Dependencies
 
-1. Navigate to the backend directory:
+1. Install backend dependencies:
    ```bash
    cd backend
-   ```
-
-2. Install dependencies:
-   ```bash
    npm install
    ```
 
-3. Create a `.env` file in the backend directory with the following content:
+2. Install frontend dependencies:
+   ```bash
+   cd ../frontend
+   npm install
    ```
-   PORT=5000
+
+### Local Configuration
+
+Create a top-level `.env` file in the repository root. You can start from `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Default local configuration:
+
+```bash
+FRONTEND_HOST=localhost
+FRONTEND_PORT=3000
+BACKEND_HOST=localhost
+BACKEND_PORT=5020
+```
+
+The shared startup script derives these automatically:
+
+- `CLIENT_URL=http://localhost:3000`
+- `NEXT_PUBLIC_SOCKET_URL=http://localhost:5020`
+
+If you need custom URLs, you can also set `CLIENT_URL` and `NEXT_PUBLIC_SOCKET_URL` directly in the same root `.env`.
+
+### Start Both Apps
+
+From the repository root:
+
+```bash
+npm run dev
+```
+
+This starts:
+
+- frontend on `http://localhost:3000`
+- backend on `http://localhost:5020`
+
+### Start One App
+
+From the repository root:
+
+```bash
+npm run dev:frontend
+```
+
+or:
+
+```bash
+npm run dev:backend
+```
+
+### Manual Per-App Startup
+
+If you still want to run the apps separately, use the same values from the root `.env`.
+
+1. Backend:
+   ```
+   PORT=5020
    CLIENT_URL=http://localhost:3000
    ```
 
-4. Start the development server:
+2. Frontend:
    ```bash
-   npm run dev
+   NEXT_PUBLIC_SOCKET_URL=http://localhost:5020
    ```
-
-The backend server will start on http://localhost:5000.
-
-### Frontend Setup
-
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create a `.env.local` file in the frontend directory with the following content:
-   ```
-   NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
-   ```
-
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-The frontend application will start on http://localhost:3000.
 
 ## Deployment Instructions
 

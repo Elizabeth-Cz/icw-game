@@ -144,7 +144,13 @@ export default function Home() {
   // Check for reconnect token on mount
   useEffect(() => {
     // Clear error on mount to prevent showing old errors
-    setError(null);
+    const persistedError = sessionStorage.getItem("gameError");
+    if (persistedError) {
+      setError(persistedError);
+      sessionStorage.removeItem("gameError");
+    } else {
+      setError(null);
+    }
 
     // Always clear any invalid reconnect tokens on page load
     const clearInvalidTokenTimeout = setTimeout(() => {
