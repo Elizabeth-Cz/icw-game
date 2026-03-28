@@ -1,54 +1,62 @@
 "use client";
 
-import React, { useState, useEffect, useId } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useSocket } from "../context/SocketContext";
 import { useGame } from "../context/GameContext";
-import { getCharacterImagesArray, teamBgClass, TeamType, teamComplementaryColors } from "../data/characterData";
-import QuestionMarkImage from "../assets/question-mark.png";
+import { getCharacterImagesArray, teamBgClass, teamComplementaryColors } from "../data/characterData";
 import Logo from '@/components/Logo';
 
 // Get character images array from shared data
 const characterImages = getCharacterImagesArray();
 
-// Define background colors for the border, grouped by color family
-const colorFamilies = [
-  // Greens
-  ["#237658", "#1A8A70", "#2C9678"],
-  // Yellows/Golds
-  ["#D0B334", "#E6C13D", "#C9A428"],
-  // Reds/Oranges
-  ["#D34F34", "#E05B41", "#C64025"],
-  // Pinks/Purples
-  ["#D084A9", "#C46B97", "#B85F8A"],
-  // Blues
-  ["#27528F", "#3468B0", "#1E4578"],
-  // Teals/Cyans
-  ["#0390A1", "#0AACBF", "#007D8C"]
-];
+const FRAME_CELL_COUNT = 60;
+const FRAME_SLOT_COUNT = 24;
+const FRAME_POSITIONS = Array.from({ length: FRAME_CELL_COUNT }, (_, index) => {
+  const row = Math.floor(index / 6);
+  const col = index % 6;
+  const cellNumber = index + 1;
+  const isFrame =
+    cellNumber <= 6 ||
+    cellNumber >= 55 ||
+    (col === 0 && row >= 1) ||
+    (col === 5 && row >= 1);
 
-// Flatten array for backward compatibility
-const bgColors = colorFamilies.flat();
+  let framePosition = -1;
 
-// Function to get a color from a different family than the previous one
-const getDistinctColor = (prevColorIndex: number): string => {
-  // Determine which family the previous color belongs to
-  const prevFamilyIndex = Math.floor(prevColorIndex / 3);
-  
-  // Select a different family
-  let newFamilyIndex;
-  do {
-    newFamilyIndex = Math.floor(Math.random() * colorFamilies.length);
-  } while (newFamilyIndex === prevFamilyIndex);
-  
-  // Select a random color from the new family
-  const selectedFamily = colorFamilies[newFamilyIndex];
-  const colorInFamily = Math.floor(Math.random() * selectedFamily.length);
-  
-  // Return the absolute index in the flattened array
-  return bgColors[newFamilyIndex * 3 + colorInFamily];
-};
+  if (cellNumber <= 6) {
+    framePosition = cellNumber - 1;
+  } else if (col === 5 && row >= 1 && row <= 8) {
+    framePosition = 6 + (row - 1);
+  } else if (cellNumber >= 55) {
+    framePosition = 14 + (5 - col);
+  } else if (col === 0 && row >= 1 && row <= 8) {
+    framePosition = 20 + (8 - row);
+  }
+
+  return {
+    index,
+    isFrame,
+    framePosition,
+  };
+});
+
+const FRAME_SLOTS = FRAME_POSITIONS
+  .filter(position => position.isFrame && position.framePosition !== -1)
+  .sort((left, right) => left.framePosition - right.framePosition)
+  .map(position => ({
+    framePosition: position.framePosition,
+    column: (position.index % 6) + 1,
+    row: Math.floor(position.index / 6) + 1,
+  }));
+
+const getFrameBackgrounds = (rotationOffset: number) =>
+  FRAME_SLOTS.map(slot => {
+    const character = characterImages[(slot.framePosition + rotationOffset) % characterImages.length];
+    const complementaryColors = teamComplementaryColors[character.team];
+    return complementaryColors[slot.framePosition % complementaryColors.length];
+  });
 
 // Main menu component
 export default function Home() {
@@ -60,23 +68,7 @@ export default function Home() {
   const [rotationOffset, setRotationOffset] = useState(0); // Track the current rotation position
   const [isAnimationEnabled, setIsAnimationEnabled] = useState(true); // Toggle for animation
   const [isMouseDown, setIsMouseDown] = useState(false); // Track if mouse is being held down
-  // Initialize with static colors first to avoid hydration mismatch
-  const [frameColors, setFrameColors] = useState<string[]>(() => {
-    // Start with a static pattern for initial render to avoid hydration errors
-    const initialColors: string[] = [];
-    
-    for (let i = 0; i < 24; i++) {
-      // Use a deterministic pattern based on position
-      const familyIndex = i % colorFamilies.length;
-      const colorIndex = Math.floor(i / colorFamilies.length) % 3;
-      initialColors.push(colorFamilies[familyIndex][colorIndex]);
-    }
-    
-    return initialColors;
-  });
-  
-  // Flag to track if we're on client side
-  const [isClient, setIsClient] = useState(false);
+  const [frameBackgrounds, setFrameBackgrounds] = useState<string[]>(() => getFrameBackgrounds(0));
 
   // Expose animation toggle to window object for programmatic control
   useEffect(() => {
@@ -110,10 +102,7 @@ export default function Home() {
     };
   }, [isAnimationEnabled]);
 
-  // Set isClient to true once component mounts (client-side only)
   useEffect(() => {
-    setIsClient(true);
-    
     // Add event listeners for mouse events
     const handleMouseDown = () => setIsMouseDown(true);
     const handleMouseUp = () => setIsMouseDown(false);
@@ -204,18 +193,10 @@ export default function Home() {
     if (!isAnimationEnabled || isMouseDown) return;
     
     const animationInterval = setInterval(() => {
-      // Shift both characters and colors one position to the right
-      setRotationOffset(prev => (prev + 1) % characterImages.length);
-      
-      // Shift frame colors one position to the right (last color moves to first)
-      setFrameColors(prev => {
-        if (prev.length === 0) return prev;
-        const newColors = [...prev];
-        const lastColor = newColors.pop();
-        if (lastColor) {
-          newColors.unshift(lastColor);
-        }
-        return newColors;
+      setRotationOffset(prev => {
+        const nextRotationOffset = (prev + 1) % characterImages.length;
+        setFrameBackgrounds(getFrameBackgrounds(nextRotationOffset));
+        return nextRotationOffset;
       });
     }, 300);
     
@@ -357,62 +338,10 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Generate all 60 grid cells */}
-      {Array.from({ length: 60 }).map((_, index) => {
-        // Calculate the row and column for this index
-        const row = Math.floor(index / 6);
-        const col = index % 6;
-        const cellNumber = index + 1;
-
-        // Check if this cell is part of the frame
-        const isFrame =
-          // Top row (1-6)
-          cellNumber <= 6 ||
-          // Bottom row (55-60)
-          cellNumber >= 55 ||
-          // Left column (7,13,19,25,31,37,43,49)
-          (col === 0 && row >= 1) ||
-          // Right column (12,18,24,30,36,42,48,54)
-          (col === 5 && row >= 1);
-
-        // Calculate position in the frame sequence for both character rotation and color mapping
-        let framePosition = -1;
-        
-        // Top row (left to right) - positions 0-5
-        if (cellNumber <= 6) {
-          framePosition = cellNumber - 1;
-        }
-        // Right column (top to bottom, excluding corners) - positions 6-13
-        else if (col === 5 && row >= 1 && row <= 8) {
-          framePosition = 6 + (row - 1);
-        }
-        // Bottom row (right to left) - positions 14-19
-        else if (cellNumber >= 55) {
-          framePosition = 14 + (5 - col);
-        }
-        // Left column (bottom to top, excluding corners) - positions 20-23
-        else if (col === 0 && row >= 1 && row <= 8) {
-          framePosition = 20 + (8 - row);
-        }
-        
-        // Apply rotation offset to the frame position if this is a frame cell
-        const characterIndex = isFrame && framePosition !== -1
-          ? (framePosition + rotationOffset) % characterImages.length
-          : index % characterImages.length;
-        
-        // Determine background color for frame cells
-        let bgColor = '#1f2937'; // Default dark gray for non-frame cells
-        
-        if (isFrame) {
-          // Get the character's team for this frame position
-          const character = characterImages[characterIndex];
-          const team = character.team;
-          const complementaryColors = teamComplementaryColors[team];
-          
-          // Use a fixed color from the complementary family based on frame position
-          const colorIndex = framePosition % complementaryColors.length;
-          bgColor = complementaryColors[colorIndex];
-        }
+      {FRAME_POSITIONS.map(({ index, isFrame, framePosition }) => {
+        const bgColor = isFrame && framePosition !== -1
+          ? frameBackgrounds[framePosition]
+          : '#1f2937';
 
         return (
           <div
@@ -420,28 +349,46 @@ export default function Home() {
             className="flex items-center justify-center pointer-events-none"
             style={{ backgroundColor: bgColor }}
           >
-            {isFrame ? (
-              <div className="rounded-full overflow-hidden w-16 h-16 flex p-2" 
-                   style={{ 
-                     filter: 'drop-shadow(3px 0 rgba(0, 0, 0, 0.7))',
-                     position: 'relative'
-                   }}>
-                <Image
-                  src={characterImages[characterIndex].src}
-                  alt={characterImages[characterIndex].alt}
-                  width={64}
-                  height={64}
-                  className={`object-cover rounded-full ${teamBgClass[characterImages[characterIndex].team]}`} // match the background color based on team color
-                />
-              </div>
-            ) : (
-              <div className="w-full h-full flex">
-                {/* Non-frame cells are empty - main content is handled by the absolute positioned div */}
-              </div>
-            )}
+            <div className="w-full h-full flex" />
           </div>
         );
       })}
+
+      <div className="pointer-events-none absolute inset-0 grid grid-cols-6 grid-rows-10">
+        {characterImages.map((character, index) => {
+          const sequencePosition = (index - rotationOffset + characterImages.length) % characterImages.length;
+          const slot = sequencePosition < FRAME_SLOT_COUNT ? FRAME_SLOTS[sequencePosition] : null;
+
+          return (
+            <div
+              key={character.id}
+              className="flex items-center justify-center"
+              style={{
+                gridColumn: slot ? `${slot.column} / span 1` : '1 / span 1',
+                gridRow: slot ? `${slot.row} / span 1` : '1 / span 1',
+                opacity: slot ? 1 : 0,
+                visibility: slot ? 'visible' : 'hidden',
+              }}
+            >
+              <div
+                className="rounded-full overflow-hidden w-16 h-16 flex p-2"
+                style={{
+                  filter: 'drop-shadow(3px 0 rgba(0, 0, 0, 0.7))',
+                  position: 'relative',
+                }}
+              >
+                <Image
+                  src={character.src}
+                  alt={character.alt}
+                  width={64}
+                  height={64}
+                  className={`object-cover rounded-full ${teamBgClass[character.team]}`}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
