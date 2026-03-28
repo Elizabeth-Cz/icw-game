@@ -23,14 +23,35 @@ export NEXT_PUBLIC_SOCKET_URL="${NEXT_PUBLIC_SOCKET_URL:-http://${BACKEND_HOST}:
 backend_pid=""
 frontend_pid=""
 
-cleanup() {
-  if [[ -n "$backend_pid" ]] && kill -0 "$backend_pid" 2>/dev/null; then
-    kill "$backend_pid" 2>/dev/null || true
+terminate_process_tree() {
+  local pid="$1"
+  local child_pid
+
+  if [[ -z "$pid" ]] || ! kill -0 "$pid" 2>/dev/null; then
+    return
   fi
 
-  if [[ -n "$frontend_pid" ]] && kill -0 "$frontend_pid" 2>/dev/null; then
-    kill "$frontend_pid" 2>/dev/null || true
-  fi
+  while IFS= read -r child_pid; do
+    if [[ -n "$child_pid" ]]; then
+      terminate_process_tree "$child_pid"
+    fi
+  done < <(pgrep -P "$pid" 2>/dev/null || true)
+
+  kill -TERM "$pid" 2>/dev/null || true
+
+  for _ in 1 2 3 4 5; do
+    if ! kill -0 "$pid" 2>/dev/null; then
+      return
+    fi
+    sleep 0.2
+  done
+
+  kill -KILL "$pid" 2>/dev/null || true
+}
+
+cleanup() {
+  terminate_process_tree "$backend_pid"
+  terminate_process_tree "$frontend_pid"
 }
 
 trap cleanup EXIT INT TERM
@@ -39,7 +60,8 @@ start_backend() {
   echo "Starting backend on http://${BACKEND_HOST}:${BACKEND_PORT}"
   (
     cd "$ROOT_DIR/backend"
-    PORT="$BACKEND_PORT" npm run dev
+    export PORT="$BACKEND_PORT"
+    exec npm run dev
   ) &
   backend_pid=$!
 }
@@ -48,9 +70,25 @@ start_frontend() {
   echo "Starting frontend on http://${FRONTEND_HOST}:${FRONTEND_PORT}"
   (
     cd "$ROOT_DIR/frontend"
-    npm run dev -- --port "$FRONTEND_PORT"
+    exec npm run dev -- --port "$FRONTEND_PORT"
   ) &
   frontend_pid=$!
+}
+
+wait_for_first_exit() {
+  while true; do
+    if [[ -n "$backend_pid" ]] && ! kill -0 "$backend_pid" 2>/dev/null; then
+      wait "$backend_pid" || true
+      return
+    fi
+
+    if [[ -n "$frontend_pid" ]] && ! kill -0 "$frontend_pid" 2>/dev/null; then
+      wait "$frontend_pid" || true
+      return
+    fi
+
+    sleep 0.5
+  done
 }
 
 case "$MODE" in
@@ -59,7 +97,7 @@ case "$MODE" in
     echo "Socket URL: ${NEXT_PUBLIC_SOCKET_URL}"
     start_backend
     start_frontend
-    wait -n "$backend_pid" "$frontend_pid"
+    wait_for_first_exit
     ;;
   backend)
     echo "Frontend URL: ${CLIENT_URL}"
