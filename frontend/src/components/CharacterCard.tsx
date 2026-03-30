@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { memo } from 'react';
 import Image from 'next/image';
 import { Character } from '../context/GameContext';
 import { characterData, teamBgClass, TeamType } from '../data/characterData';
-import QuestionMarkImage from '../assets/question-mark.png';
 import Logo from './Logo';
 
 interface CharacterCardProps {
@@ -18,27 +17,12 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
   isSecret = false,
   onClick,
 }) => {
-  // Track previous elimination state to apply animation only when it changes
-  const [wasEliminated, setWasEliminated] = useState(isEliminated);
-  const [shouldAnimate, setShouldAnimate] = useState(false);
-
-  // Get image source from our imported images map
-  const getImageSrc = () => {
-    return characterData[character.name]?.image;
-  };
-
-  // Get team for the character
-  const getCharacterTeam = (): TeamType => {
-    return characterData[character.name]?.team || 'product';
-  };
-  
-  // Get background color class based on team
-  const getTeamBgClass = () => {
-    return teamBgClass[getCharacterTeam()];
-  };
+  const imageSrc = characterData[character.name]?.image;
+  const characterTeam: TeamType = characterData[character.name]?.team || 'product';
+  const teamBackgroundClass = teamBgClass[characterTeam];
 
   return (
-    <div className={`rounded-xl xs:rounded-2xl bg-[#D8C8AE] p-[3px] w-full max-w-[180px] ${shouldAnimate ? 'flip-horizontal-bottom' : ''}`}>
+    <div className="rounded-xl xs:rounded-2xl bg-[#D8C8AE] p-[3px] w-full max-w-[180px]">
       <div
         className={`h-full rounded-lg xs:rounded-xl overflow-hidden border-4 border-[var(--dark-blue)] ${isEliminated ? 'bg-[#27528F]' : ''}`}
         onClick={onClick}
@@ -49,9 +33,9 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
           ) : (
             <Image
               unoptimized={true}
-              src={getImageSrc()}
+              src={imageSrc}
               alt={character.name}
-              className={`object-cover h-full w-full ${getTeamBgClass()}`}
+              className={`object-cover h-full w-full ${teamBackgroundClass}`}
               fill
               sizes="(max-width: 480px) 100px, (max-width: 768px) 140px, 180px"
             />
@@ -67,4 +51,4 @@ const CharacterCard: React.FC<CharacterCardProps> = ({
   );
 };
 
-export default CharacterCard;
+export default memo(CharacterCard);

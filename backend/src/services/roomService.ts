@@ -6,6 +6,7 @@ export interface Player {
   secretCharacterId?: string;
   reconnectToken: string;
   connected: boolean;
+  lastSeenAt: Date;
   characterOrder?: string[]; // Array of character IDs in player-specific order
 }
 
@@ -19,6 +20,16 @@ export interface Room {
 
 export class RoomService {
   private rooms: Record<string, Room> = {};
+
+  private touchRoom(room: Room): void {
+    room.lastActivity = new Date();
+  }
+
+  private touchPlayer(room: Room, player: Player): void {
+    const now = new Date();
+    player.lastSeenAt = now;
+    room.lastActivity = now;
+  }
 
   // Generate a random 4-digit room code
   generateRoomCode(): string {
@@ -39,16 +50,18 @@ export class RoomService {
   }
 
   // Create a new room
-  createRoom(roomCode: string, player: Omit<Player, 'connected'>): Room {
+  createRoom(roomCode: string, player: Omit<Player, 'connected' | 'lastSeenAt'>): Room {
+    const now = new Date();
     const room: Room = {
       roomCode,
       players: [{
         ...player,
-        connected: true
+        connected: true,
+        lastSeenAt: now,
       }],
       status: 'waiting',
-      createdAt: new Date(),
-      lastActivity: new Date(),
+      createdAt: now,
+      lastActivity: now,
     };
 
     this.rooms[roomCode] = room;
@@ -67,16 +80,17 @@ export class RoomService {
   }
 
   // Add a player to a room
-  addPlayerToRoom(roomCode: string, player: Omit<Player, 'connected'>): void {
+  addPlayerToRoom(roomCode: string, player: Omit<Player, 'connected' | 'lastSeenAt'>): void {
     const room = this.getRoom(roomCode);
     if (!room) throw new Error('Room not found');
     if (this.isRoomFull(roomCode)) throw new Error('Room is full');
 
     room.players.push({
       ...player,
-      connected: true
+      connected: true,
+      lastSeenAt: new Date(),
     });
-    room.lastActivity = new Date();
+    this.touchRoom(room);
   }
 
   // Update a player's name
@@ -88,7 +102,7 @@ export class RoomService {
     if (!player) throw new Error('Player not found');
 
     player.name = name;
-    room.lastActivity = new Date();
+    this.touchPlayer(room, player);
   }
 
   // Check if both players have names
@@ -109,7 +123,7 @@ export class RoomService {
     if (!player) throw new Error('Player not found');
 
     player.secretCharacterId = characterId;
-    room.lastActivity = new Date();
+    this.touchPlayer(room, player);
   }
 
   // Set room status
@@ -118,7 +132,7 @@ export class RoomService {
     if (!room) throw new Error('Room not found');
 
     room.status = status;
-    room.lastActivity = new Date();
+    this.touchRoom(room);
   }
 
   // Find a player by reconnect token
@@ -145,7 +159,7 @@ export class RoomService {
 
     player.socketId = socketId;
     player.connected = true;
-    room.lastActivity = new Date();
+    this.touchPlayer(room, player);
   }
 
   // Check if a player is in a room
@@ -162,7 +176,7 @@ export class RoomService {
     if (!room) throw new Error('Room not found');
 
     room.players = room.players.filter(p => p.playerId !== playerId);
-    room.lastActivity = new Date();
+    this.touchRoom(room);
   }
 
   // Check if a room is empty
@@ -201,7 +215,37 @@ export class RoomService {
     if (!player) throw new Error('Player not found');
 
     player.connected = false;
-    room.lastActivity = new Date();
+    this.touchRoom(room);
+  }
+
+  // Record activity for a player in a room
+  recordPlayerActivity(roomCode: string, playerId: string): { room: Room; player: Player } {
+    const room = this.getRoom(roomCode);
+    if (!room) throw new Error('Room not found');
+
+    const player = room.players.find(p => p.playerId === playerId);
+    if (!player) throw new Error('Player not found');
+
+    this.touchPlayer(room, player);
+    return { room, player };
+  }
+
+  // Get room heartbeat status for a player
+  getHeartbeatStatus(roomCode: string, playerId: string): { roomStatus: Room['status']; opponentConnected: boolean } {
+    const room = this.getRoom(roomCode);
+    if (!room) throw new Error('Room not found');
+
+    const player = room.players.find(p => p.playerId === playerId);
+    if (!player) throw new Error('Player not found');
+
+    const opponentConnected = room.players.some(
+      currentPlayer => currentPlayer.playerId !== playerId && currentPlayer.connected,
+    );
+
+    return {
+      roomStatus: room.status,
+      opponentConnected,
+    };
   }
 
   // Clean up inactive rooms and handle disconnected players
@@ -211,7 +255,10 @@ export class RoomService {
     
     for (const roomCode in this.rooms) {
       const room = this.rooms[roomCode];
-      const inactiveMinutes = (now.getTime() - room.lastActivity.getTime()) / (1000 * 60);
+      const latestPlayerActivity = room.players.reduce((latest, player) => {
+        return Math.max(latest, player.lastSeenAt.getTime());
+      }, room.lastActivity.getTime());
+      const inactiveMinutes = (now.getTime() - latestPlayerActivity) / (1000 * 60);
       
       // Check if all players are disconnected
       const allDisconnected = room.players.length > 0 && room.players.every(p => !p.connected);
@@ -243,6 +290,6 @@ export class RoomService {
     room.players[0].characterOrder = player1Order;
     room.players[1].characterOrder = player2Order;
     
-    room.lastActivity = new Date();
+    this.touchRoom(room);
   }
 }

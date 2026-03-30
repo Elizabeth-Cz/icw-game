@@ -14,6 +14,7 @@ const SocketContext = createContext<SocketContextType>({
 });
 
 export const useSocket = () => useContext(SocketContext);
+export const getSocketServerUrl = () => process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5020';
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -21,8 +22,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     // Get the socket URL from environment variables
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
-    
+    const socketUrl = getSocketServerUrl();
+
     // Initialize socket connection
     const socketInstance = io(socketUrl, {
       reconnectionAttempts: 5,

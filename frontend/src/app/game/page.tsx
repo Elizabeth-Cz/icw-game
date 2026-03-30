@@ -1,11 +1,19 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useEffect, useEffectEvent, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSocket } from "../../context/SocketContext";
+import { getSocketServerUrl, useSocket } from "../../context/SocketContext";
 import { useGame, Character } from "../../context/GameContext";
 import CharacterCard from "../../components/CharacterCard";
 import BackButton from "@/components/BackButton";
+
+const HEARTBEAT_INTERVAL_MS = 5 * 1000;
+
+interface HeartbeatResponse {
+  ok: boolean;
+  roomStatus: "waiting" | "active";
+  opponentConnected: boolean;
+}
 
 export default function GameBoard() {
   return (
@@ -27,15 +35,19 @@ function GameBoardInner() {
     toggleCharacterElimination,
     setGameStatus,
     setOpponentConnected,
-    resetEliminations,
     setRoomCode,
-    setPlayerId
+    setPlayerId,
   } = useGame();
   
   const [error, setError] = useState<string | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [isPageVisible, setIsPageVisible] = useState(true);
+  const requestedGameDataRef = useRef<string | null>(null);
+  const hasSecretCharacterRef = useRef(false);
+  const hasAllCharactersRef = useRef(false);
+  const heartbeatInFlightRef = useRef(false);
 
   // Characters are now loaded from the backend
 
@@ -45,6 +57,19 @@ function GameBoardInner() {
       router.push("/");
     }
   }, [roomCode, router]);
+
+  useEffect(() => {
+    const updateVisibility = () => {
+      setIsPageVisible(document.visibilityState === "visible");
+    };
+
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", updateVisibility);
+    };
+  }, []);
 
   // Ensure we have room code and player ID from localStorage if not in game state
   useEffect(() => {
@@ -60,25 +85,93 @@ function GameBoardInner() {
       setPlayerId(storedPlayerId!);
     }
   }, [roomCode, gameState.playerId, setRoomCode, setPlayerId]);
+
+  useEffect(() => {
+    const currentSessionKey = roomCode && gameState.playerId
+      ? `${roomCode}:${gameState.playerId}`
+      : null;
+
+    requestedGameDataRef.current = null;
+    hasSecretCharacterRef.current = Boolean(gameState.secretCharacter);
+    hasAllCharactersRef.current = gameState.allCharacters.length > 0;
+    heartbeatInFlightRef.current = false;
+    setIsLoading(!(hasSecretCharacterRef.current && hasAllCharactersRef.current));
+    setRetryCount(0);
+
+    if (!currentSessionKey) {
+      setCharacters([]);
+    }
+  }, [roomCode, gameState.playerId]);
+
+  const expireGame = useEffectEvent((message: string) => {
+    sessionStorage.setItem("gameError", message);
+    localStorage.removeItem("reconnectToken");
+    localStorage.removeItem("roomCode");
+    localStorage.removeItem("playerId");
+    router.push("/");
+  });
+
+  const sendHeartbeat = useEffectEvent(async () => {
+    if (!roomCode || !gameState.playerId || heartbeatInFlightRef.current) {
+      return;
+    }
+
+    heartbeatInFlightRef.current = true;
+
+    try {
+      const heartbeatUrl = `${getSocketServerUrl().replace(/\/$/, "")}/api/rooms/${roomCode}/heartbeat`;
+      const response = await fetch(heartbeatUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          playerId: gameState.playerId,
+        }),
+      });
+
+      if (response.status === 404 || response.status === 410) {
+        expireGame("Your game expired after 5 minutes of inactivity. Start a new game to continue.");
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Heartbeat failed with status ${response.status}`);
+      }
+
+      const data: HeartbeatResponse = await response.json();
+      setOpponentConnected(data.opponentConnected);
+      setGameStatus(data.opponentConnected ? data.roomStatus : "disconnected");
+      setError(null);
+    } catch (heartbeatError) {
+      console.error("Heartbeat failed:", heartbeatError);
+    } finally {
+      heartbeatInFlightRef.current = false;
+    }
+  });
+
+  useEffect(() => {
+    if (!roomCode || !gameState.playerId || !isPageVisible) return;
+    void sendHeartbeat();
+
+    const heartbeatTimer = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void sendHeartbeat();
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(heartbeatTimer);
+    };
+  }, [roomCode, gameState.playerId, isPageVisible]);
   
   // Retry mechanism for loading characters
   useEffect(() => {
-    if (!socket || !roomCode || !gameState.playerId) return;
-    
-    // Log current state for debugging
-    console.log('Retry mechanism active with state:', {
-      roomCode,
-      playerId: gameState.playerId,
-      isLoading,
-      retryCount,
-      hasCharacters: characters.length > 0,
-      hasSecretCharacter: !!gameState.secretCharacter
-    });
+    if (!socket || !roomCode || !gameState.playerId || !isLoading) return;
     
     // Set up retry timer if we don't have characters yet
     const retryTimer = setTimeout(() => {
       if (isLoading && retryCount < 5) {
-        console.log(`Retry attempt ${retryCount + 1} for loading characters`);
         setRetryCount(retryCount + 1);
         
         // Request both secret character and all characters again
@@ -95,53 +188,44 @@ function GameBoardInner() {
     }, 2000); // Retry every 2 seconds
     
     return () => clearTimeout(retryTimer);
-  }, [socket, roomCode, gameState.playerId, isLoading, retryCount, characters.length, gameState.secretCharacter]);
+  }, [socket, roomCode, gameState.playerId, isLoading, retryCount]);
+
+  const handleSecretCharacterAssigned = useEffectEvent(({ character }: { character: Character }) => {
+    setSecretCharacter(character);
+    hasSecretCharacterRef.current = true;
+
+    if (hasAllCharactersRef.current) {
+      setIsLoading(false);
+    }
+  });
+
+  const handleAllCharactersReceived = useEffectEvent(({ characters: nextCharacters }: { characters: Character[] }) => {
+    setAllCharacters(nextCharacters);
+    setCharacters(nextCharacters);
+    hasAllCharactersRef.current = true;
+    
+    if (hasSecretCharacterRef.current) {
+      setIsLoading(false);
+    }
+  });
+
+  const handlePlayerDisconnected = useEffectEvent(() => {
+    setOpponentConnected(false);
+    setGameStatus("disconnected");
+  });
+
+  const handlePlayerReconnected = useEffectEvent(() => {
+    setOpponentConnected(true);
+    setGameStatus("active");
+  });
+
+  const handleError = useEffectEvent(({ message }: { message: string }) => {
+    setError(message);
+  });
 
   // Listen for socket events
   useEffect(() => {
     if (!socket) return;
-
-    // Handle secret character assignment
-    const handleSecretCharacterAssigned = ({ character }: { character: Character }) => {
-      console.log('Secret character received:', character);
-      setSecretCharacter(character);
-      
-      // If we now have both secret character and all characters, we're done loading
-      if (characters.length > 0) {
-        console.log('Both secret character and all characters loaded');
-        setIsLoading(false);
-      }
-    };
-
-    // Handle all characters received
-    const handleAllCharactersReceived = ({ characters }: { characters: Character[] }) => {
-      console.log('All characters received:', characters.length);
-      setAllCharacters(characters);
-      setCharacters(characters);
-      
-      // If we now have both secret character and all characters, we're done loading
-      if (gameState.secretCharacter) {
-        console.log('Both secret character and all characters loaded');
-        setIsLoading(false);
-      }
-    };
-
-    // Handle player disconnection
-    const handlePlayerDisconnected = () => {
-      setOpponentConnected(false);
-      setGameStatus("disconnected");
-    };
-
-    // Handle player reconnection
-    const handlePlayerReconnected = () => {
-      setOpponentConnected(true);
-      setGameStatus("active");
-    };
-
-    // Handle errors
-    const handleError = ({ message }: { message: string }) => {
-      setError(message);
-    };
 
     // Register event listeners
     socket.on("secret_character_assigned", handleSecretCharacterAssigned);
@@ -182,7 +266,29 @@ function GameBoardInner() {
       socket.off("player_reconnected", handlePlayerReconnected);
       socket.off("room_error", handleError);
     };
-  }, [socket, roomCode, gameState.playerId, gameState.secretCharacter, gameState.allCharacters.length, setSecretCharacter, setAllCharacters, setOpponentConnected, setGameStatus]);
+  }, [socket]);
+
+  useEffect(() => {
+    if (!socket || !roomCode || !gameState.playerId) return;
+
+    const requestKey = `${roomCode}:${gameState.playerId}`;
+    if (requestedGameDataRef.current === requestKey) {
+      return;
+    }
+
+    requestedGameDataRef.current = requestKey;
+    void sendHeartbeat();
+
+    socket.emit("request_secret_character", {
+      roomCode,
+      playerId: gameState.playerId,
+    });
+
+    socket.emit("get_all_characters", {
+      roomCode,
+      playerId: gameState.playerId,
+    });
+  }, [socket, roomCode, gameState.playerId]);
 
   // Handle character click (toggle elimination)
   const handleCharacterClick = (characterId: string) => {

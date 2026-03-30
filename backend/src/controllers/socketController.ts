@@ -1,3 +1,4 @@
+import { Express, Request, Response } from 'express';
 import { Server, Socket } from 'socket.io';
 import { RoomService, Player, Room } from '../services/roomService';
 import { CharacterService, Character } from '../services/characterService';
@@ -10,6 +11,40 @@ function generateId(): string {
 // Initialize services
 const roomService = new RoomService();
 const characterService = new CharacterService();
+
+export const registerRoomRoutes = (app: Express) => {
+  app.post('/api/rooms/:roomCode/heartbeat', (req: Request, res: Response) => {
+    const roomCodeParam = req.params.roomCode;
+    const { playerId } = req.body as { playerId?: string };
+    const roomCode = Array.isArray(roomCodeParam) ? roomCodeParam[0] : roomCodeParam;
+
+    if (!roomCode) {
+      return res.status(400).json({ ok: false, message: 'roomCode is required' });
+    }
+
+    if (!playerId) {
+      return res.status(400).json({ ok: false, message: 'playerId is required' });
+    }
+
+    const room = roomService.getRoom(roomCode);
+    if (!room) {
+      return res.status(404).json({ ok: false, message: 'Room not found' });
+    }
+
+    const player = room.players.find(currentPlayer => currentPlayer.playerId === playerId);
+    if (!player) {
+      return res.status(410).json({ ok: false, message: 'Player not found in room' });
+    }
+
+    roomService.recordPlayerActivity(roomCode, playerId);
+    const status = roomService.getHeartbeatStatus(roomCode, playerId);
+
+    return res.status(200).json({
+      ok: true,
+      ...status,
+    });
+  });
+};
 
 // Socket event types
 export enum SocketEvents {
@@ -226,8 +261,7 @@ export const setupSocketHandlers = (io: Server) => {
         // Notify other player that this player has reconnected
         socket.to(room.roomCode).emit('player_reconnected');
         
-        // Update room's last activity timestamp
-        room.lastActivity = new Date();
+        roomService.recordPlayerActivity(room.roomCode, player.playerId);
       } catch (error) {
         handleError(socket, 'Failed to reconnect', error);
       }
@@ -279,6 +313,7 @@ export const setupSocketHandlers = (io: Server) => {
         
         // Get the 20 random characters for this specific game room
         const gameCharacters = characterService.getGameCharacters(roomCode);
+        roomService.recordPlayerActivity(roomCode, playerId);
         
         // If this is the first time getting characters, create and assign shuffled orders
         if (!player.characterOrder) {
@@ -317,6 +352,7 @@ export const setupSocketHandlers = (io: Server) => {
         
         const player = room.players.find(p => p.playerId === playerId);
         if (!player || !player.secretCharacterId) return;
+        roomService.recordPlayerActivity(roomCode, playerId);
         
         // Make sure we have game characters for this room
         const gameCharacters = characterService.getGameCharacters(roomCode);

@@ -43,6 +43,11 @@ export type CharacterImageData = {
   team: TeamType;
 };
 
+export type CharacterAsset = CharacterImageData & {
+  id: string;
+  name: string;
+};
+
 // Team background color mapping
 export const teamBgClass: Record<TeamType, string> = {
   rocket: "bg-[#237658]",
@@ -114,11 +119,29 @@ export const characterData: Record<string, CharacterImageData> = {
   'Kenny': { image: KennyImage, team: 'rocket' }
 };
 
+export const characterAssets: CharacterAsset[] = Object.entries(characterData).map(
+  ([name, data], index) => ({
+    id: `${index + 1}`,
+    name,
+    image: data.image,
+    team: data.team,
+  }),
+);
+
+export const characterAssetByName: Record<string, CharacterAsset> = characterAssets.reduce(
+  (map, character) => {
+    map[character.name] = character;
+    return map;
+  },
+  {} as Record<string, CharacterAsset>,
+);
+
 // Helper function to get character images in a format compatible with the main page
 export const getCharacterImagesArray = () => {
-  return Object.entries(characterData).map(([name, data]) => ({
-    src: data.image,
-    alt: name,
-    team: data.team
+  return characterAssets.map(character => ({
+    id: character.id,
+    src: character.image,
+    alt: character.name,
+    team: character.team,
   }));
 };

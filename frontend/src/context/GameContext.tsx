@@ -37,6 +37,7 @@ interface GameContextType {
   setOpponentConnected: (connected: boolean) => void;
   setReconnectToken: (token: string) => void;
   resetGame: () => void;
+  clearGameSession: () => void;
   resetEliminations: () => void;
 }
 
@@ -66,6 +67,7 @@ const GameContext = createContext<GameContextType>({
   setOpponentConnected: () => {},
   setReconnectToken: () => {},
   resetGame: () => {},
+  clearGameSession: () => {},
   resetEliminations: () => {},
 });
 
@@ -181,6 +183,14 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setGameState({ ...initialGameState, reconnectToken });
   };
 
+  // Clear persisted game state and reset context
+  const clearGameSession = () => {
+    localStorage.removeItem('reconnectToken');
+    localStorage.removeItem('roomCode');
+    localStorage.removeItem('playerId');
+    setGameState(initialGameState);
+  };
+
   // Reset eliminations only
   const resetEliminations = () => {
     setGameState(prev => ({ ...prev, eliminatedCharacterIds: [] }));
@@ -200,6 +210,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setOpponentConnected,
         setReconnectToken,
         resetGame,
+        clearGameSession,
         resetEliminations,
       }}
     >
